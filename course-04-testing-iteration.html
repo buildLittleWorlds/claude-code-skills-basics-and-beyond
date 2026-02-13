@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testing &amp; Iteration — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 1: Skills Fundamentals</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Testing, Iteration, and the Feedback Loop</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>4</strong> of 12</span>
+      <span class="meta-pill"><strong>Intermediate</strong></span>
+      <span class="meta-pill">40 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">In Courses 1&ndash;3 you built skills and tested them informally &mdash; try a prompt, see if it works, move on. Real-world skills need systematic testing. This course teaches the three testing areas (triggering, functional, and performance comparison), how to design &ldquo;should trigger&rdquo; and &ldquo;should NOT trigger&rdquo; test suites, how to diagnose under-triggering vs over-triggering, and the iteration loop that turns a rough draft into a reliable skill. You&rsquo;ll build a <strong>pr-description</strong> skill and create a structured test plan with 15+ queries that exercises all three testing areas.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Course 1: Your First Skill in Five Minutes</strong> (skill folder basics, YAML frontmatter)</li>
+        <li>Completed <strong>Course 2: Crafting Descriptions and Trigger Phrases</strong> (description formula, trigger phrases, under/over-triggering)</li>
+        <li>Completed <strong>Course 3: Full Skill Anatomy</strong> (scripts, references, assets, progressive disclosure L3)</li>
+        <li>You have the <code>daily-standup</code>, <code>code-review-checklist</code>, and <code>meeting-to-actions</code> skills installed</li>
+        <li>You&rsquo;re comfortable creating and installing skills from scratch</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>Why Testing Matters for Skills</h3>
+
+    <p>In Courses 1&ndash;3, you built skills and tested them informally &mdash; try a prompt, see if it works, move on. That&rsquo;s fine for getting started, but real-world skills need systematic testing. The PDF guide (Chapter 3) frames the problem clearly:</p>
+
+    <blockquote>
+      <p>&ldquo;Skills can be tested at varying levels of rigor depending on your needs.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 3</cite>
+    </blockquote>
+
+    <p>It then lists three testing approaches:</p>
+
+    <ol>
+      <li><strong>Manual testing in Claude.ai</strong> &mdash; Run queries directly and observe behavior. Fast iteration, no setup required.</li>
+      <li><strong>Scripted testing in Claude Code</strong> &mdash; Automate test cases for repeatable validation across changes.</li>
+      <li><strong>Programmatic testing via skills API</strong> &mdash; Build evaluation suites that run systematically against defined test sets.</li>
+    </ol>
+
+    <p>For this course, you&rsquo;ll focus on manual testing with a structured approach. The key insight is that &ldquo;testing&rdquo; doesn&rsquo;t mean writing Python unit tests for your SKILL.md. It means designing a suite of queries that verify your skill behaves correctly across three distinct areas.</p>
+
+    <h3>The Three Testing Areas</h3>
+
+    <p>The PDF guide (Chapter 3, pp.15&ndash;16) defines three areas that every skill should be tested against. These aren&rsquo;t optional categories &mdash; each catches different classes of problems.</p>
+
+    <h4>Area 1: Triggering Tests</h4>
+
+    <p><strong>Goal</strong>: Ensure your skill loads at the right times.</p>
+
+    <p>This area tests whether your description is properly tuned. You&rsquo;re testing the <em>first level</em> of progressive disclosure from Course 1 &mdash; the frontmatter that Claude reads to decide whether to load the skill.</p>
+
+    <p>The PDF provides three specific test cases:</p>
+
+    <ul>
+      <li><strong>Triggers on obvious tasks</strong> &mdash; The exact phrases in your description</li>
+      <li><strong>Triggers on paraphrased requests</strong> &mdash; Reworded versions of those phrases</li>
+      <li><strong>Doesn&rsquo;t trigger on unrelated topics</strong> &mdash; Queries that shouldn&rsquo;t activate the skill</li>
+    </ul>
+
+    <p>Here&rsquo;s the example test suite from the PDF:</p>
+
+    <pre>Should trigger:
+- "Help me set up a new ProjectHub workspace"
+- "I need to create a project in ProjectHub"
+- "Initialize a ProjectHub project for Q4 planning"
+
+Should NOT trigger:
+- "What's the weather in San Francisco?"
+- "Help me write Python code"
+- "Create a spreadsheet" (unless ProjectHub skill handles sheets)</pre>
+
+    <p>Notice the structure: <strong>Should trigger</strong> includes both exact matches and paraphrases. <strong>Should NOT trigger</strong> includes completely unrelated queries AND edge cases (the spreadsheet example might or might not be relevant depending on the skill&rsquo;s scope).</p>
+
+    <h4>Area 2: Functional Tests</h4>
+
+    <p><strong>Goal</strong>: Verify the skill produces correct outputs.</p>
+
+    <p>Once the skill triggers, does it actually do the right thing? The PDF lists four test cases:</p>
+
+    <ul>
+      <li><strong>Valid outputs generated</strong> &mdash; Does the output match the expected format and content?</li>
+      <li><strong>API calls succeed</strong> &mdash; Do any tool invocations (git commands, scripts) work correctly?</li>
+      <li><strong>Error handling works</strong> &mdash; Does the skill handle bad input gracefully?</li>
+      <li><strong>Edge cases covered</strong> &mdash; Does it handle unusual but valid inputs?</li>
+    </ul>
+
+    <p>The PDF gives a structured example using Given/When/Then format:</p>
+
+    <pre>Test: Create project with 5 tasks
+Given: Project name "Q4 Planning", 5 task descriptions
+When: Skill executes workflow
+Then:
+    - Project created in ProjectHub
+    - 5 tasks created with correct properties
+    - All tasks linked to project
+    - No API errors</pre>
+
+    <p>For the <code>pr-description</code> skill you&rsquo;ll build in this course, functional tests verify things like: Does it read the git diff correctly? Does the output follow the PR template? Does it handle an empty diff without crashing?</p>
+
+    <h4>Area 3: Performance Comparison</h4>
+
+    <p><strong>Goal</strong>: Prove the skill improves results vs. a baseline.</p>
+
+    <p>This is the test area most people skip, but it&rsquo;s the one that demonstrates value. The PDF provides a concrete baseline comparison format:</p>
+
+    <pre>Without skill:
+- User provides instructions each time
+- 15 back-and-forth messages
+- 3 failed API calls requiring retry
+- 12,000 tokens consumed
+
+With skill:
+- Automatic workflow execution
+- 2 clarifying questions only
+- 0 failed API calls
+- 6,000 tokens consumed</pre>
+
+    <p>You don&rsquo;t need to measure exact token counts for this course. The important metrics to observe are:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>What to watch</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Message count</strong></td>
+          <td>How many back-and-forth messages before you get a useful result?</td>
+        </tr>
+        <tr>
+          <td><strong>Failed tool calls</strong></td>
+          <td>Does Claude try commands that don&rsquo;t work? Retry things?</td>
+        </tr>
+        <tr>
+          <td><strong>Output quality</strong></td>
+          <td>Is the output consistent? Does it follow your template?</td>
+        </tr>
+        <tr>
+          <td><strong>Manual corrections</strong></td>
+          <td>How many things do you have to fix by hand after the skill runs?</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>The Pro Tip: Iterate on a Single Task First</h3>
+
+    <p>The PDF guide highlights a critical workflow tip:</p>
+
+    <blockquote>
+      <p>&ldquo;We&rsquo;ve found that the most effective skill creators iterate on a single challenging task until Claude succeeds, then extract the winning approach into a skill. This leverages Claude&rsquo;s in-context learning and provides faster signal than broad testing. Once you have a working foundation, expand to multiple test cases for coverage.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 3</cite>
+    </blockquote>
+
+    <p>This means: before writing 15 test cases, pick ONE hard case and get it working perfectly. Then formalize the approach into your SKILL.md. Then expand your test coverage.</p>
+
+    <p>For the <code>pr-description</code> skill, this means: first manually write one excellent PR description with Claude&rsquo;s help, then capture that process as a skill, then test it across different types of PRs.</p>
+
+    <h3>Diagnosing Under-Triggering vs Over-Triggering</h3>
+
+    <p>The PDF guide (Chapter 3, p.17) provides a diagnostic framework. These are the signals to watch for after your initial round of testing.</p>
+
+    <p><strong>Under-triggering signals:</strong></p>
+
+    <ul>
+      <li>Skill doesn&rsquo;t load when it should</li>
+      <li>Users manually enabling it (typing <code>/skill-name</code> because automatic triggering misses)</li>
+      <li>Support questions about when to use it</li>
+    </ul>
+
+    <p><strong>Solution from the PDF:</strong></p>
+
+    <blockquote>
+      <p>&ldquo;Add more detail and nuance to the description &mdash; this may include keywords particularly for technical terms.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 3, p.17</cite>
+    </blockquote>
+
+    <p>In practice this means: go back to the description formula from Course 2 (<code>[What] + [When] + [Capabilities]</code>) and add more trigger phrases to the <code>[When]</code> component. If users are saying &ldquo;write a PR summary&rdquo; but your description only mentions &ldquo;PR description&rdquo;, add &ldquo;PR summary&rdquo; to the description.</p>
+
+    <p><strong>Over-triggering signals:</strong></p>
+
+    <ul>
+      <li>Skill loads for irrelevant queries</li>
+      <li>Users disabling it</li>
+      <li>Confusion about purpose</li>
+    </ul>
+
+    <p><strong>Solution from the PDF:</strong></p>
+
+    <blockquote>
+      <p>&ldquo;Add negative triggers, be more specific.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 3, p.17</cite>
+    </blockquote>
+
+    <p>The skills docs echo this with two specific fixes:</p>
+
+    <ol>
+      <li>&ldquo;Make the description more specific&rdquo; (from the Troubleshooting section)</li>
+      <li>&ldquo;Add <code>disable-model-invocation: true</code> if you only want manual invocation&rdquo;</li>
+    </ol>
+
+    <h3>Execution Issues and Iteration</h3>
+
+    <p>The PDF also identifies a third category of problems &mdash; the skill triggers correctly but produces poor results:</p>
+
+    <p><strong>Execution issue signals:</strong></p>
+
+    <ul>
+      <li>Inconsistent results across invocations</li>
+      <li>API call failures or tool errors</li>
+      <li>User corrections needed after the skill runs</li>
+    </ul>
+
+    <p><strong>Solution from the PDF:</strong></p>
+
+    <blockquote>
+      <p>&ldquo;Improve instructions, add error handling.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 3</cite>
+    </blockquote>
+
+    <p>This maps directly to Course 2&rsquo;s lesson on specific instructions: replace vague directives with exact commands and expected outputs. If Claude keeps running the wrong git command, don&rsquo;t write &ldquo;get the diff&rdquo; &mdash; write &ldquo;run <code>git diff --cached --stat</code> to get a summary of staged changes.&rdquo;</p>
+
+    <h3>The <code>disable-model-invocation</code> Field</h3>
+
+    <p>The skills docs describe this frontmatter field in detail:</p>
+
+    <div class="yaml-block"><span class="yaml-key">name:</span> <span class="yaml-value">deploy</span>
+<span class="yaml-key">description:</span> <span class="yaml-value">Deploy the application to production</span>
+<span class="yaml-key">disable-model-invocation:</span> <span class="yaml-value">true</span></div>
+
+    <p>When <code>disable-model-invocation: true</code> is set:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Behavior</th>
+          <th>Effect</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Description in system prompt</td>
+          <td><strong>No</strong> &mdash; Claude doesn&rsquo;t even see it</td>
+        </tr>
+        <tr>
+          <td>Claude can invoke automatically</td>
+          <td><strong>No</strong> &mdash; skill is invisible to Claude</td>
+        </tr>
+        <tr>
+          <td>User can invoke with <code>/name</code></td>
+          <td><strong>Yes</strong> &mdash; still works as a slash command</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Use this for skills with side effects &mdash; deployment, sending messages, publishing &mdash; where you want to control the timing. The <code>pr-description</code> skill you&rsquo;ll build is a good candidate for this field if you find it over-triggers during testing, since generating PR descriptions has context requirements (you need to be in a git repo with staged changes).</p>
+
+    <h3>The Character Budget</h3>
+
+    <p>From the skills docs Troubleshooting section:</p>
+
+    <blockquote>
+      <p>&ldquo;Skill descriptions are loaded into context so Claude knows what&rsquo;s available. If you have many skills, they may exceed the character budget. The budget scales dynamically at 2% of the context window, with a fallback of 16,000 characters.&rdquo;</p>
+      <cite>Claude Code Skills Docs &mdash; Troubleshooting</cite>
+    </blockquote>
+
+    <p>This means if you have 20 skills with 800-character descriptions, you&rsquo;re at 16,000 characters &mdash; the fallback limit. If you install more skills, some get excluded entirely. You can check this by running <code>/context</code> in Claude Code and looking for a warning about excluded skills.</p>
+
+    <p>If you hit this limit, override it by setting the <code>SLASH_COMMAND_TOOL_CHAR_BUDGET</code> environment variable. But the better fix is to keep descriptions concise.</p>
+
+    <h3>The Iteration Loop</h3>
+
+    <p>Putting it all together, here&rsquo;s the testing and iteration process:</p>
+
+    <pre>1. Write initial SKILL.md
+2. Run triggering tests (5-8 queries)
+   ├── Under-triggers? → Expand description keywords
+   └── Over-triggers? → Narrow description, add specificity
+3. Run functional tests (5-8 queries)
+   ├── Wrong output? → Fix instructions, add examples
+   └── Tool errors? → Fix commands, add error handling
+4. Run performance comparison (with vs without)
+   ├── No improvement? → Rethink the skill's value
+   └── Clear improvement? → Document the baseline
+5. Repeat steps 2-4 for each iteration round</pre>
+
+    <p>The PDF recommends at least two iteration rounds before considering a skill &ldquo;ready.&rdquo;</p>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li>PDF Guide: Chapter 3 &ldquo;Testing and Iteration&rdquo; (pp. 14&ndash;17) &mdash; Three testing areas, baseline comparison, iteration signals</li>
+        <li>Skills docs: &ldquo;Troubleshooting&rdquo; section &mdash; Skill not triggering, triggers too often, character budget</li>
+        <li>Skills docs: &ldquo;Control who invokes a skill&rdquo; section &mdash; <code>disable-model-invocation</code> field</li>
+        <li>Course 2 lesson: Description formula and trigger phrases (foundation for triggering tests)</li>
+      </ul>
+    </div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>A <strong>pr-description</strong> skill that generates pull request descriptions from git diffs. This demonstrates Course 4 concepts because:</p>
+
+    <div class="callout info">
+      <ul>
+        <li>It has <strong>clear triggering criteria</strong> &mdash; easy to design should/shouldn&rsquo;t trigger tests</li>
+        <li>It depends on <strong>git tool calls</strong> &mdash; functional tests can verify the right commands run</li>
+        <li>It produces <strong>structured output</strong> &mdash; you can objectively compare output quality with vs without the skill</li>
+        <li>It benefits from <strong>performance comparison</strong> &mdash; without the skill, users write PR descriptions manually or get inconsistent results from Claude</li>
+        <li>The test plan exercises all three testing areas systematically</li>
+      </ul>
+    </div>
+
+    <p>You&rsquo;ll also create a <strong>test-plan.md</strong> with 15+ organized test queries &mdash; this is the main deliverable that demonstrates the testing concepts.</p>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Understand the skill design</span>
+      <div class="step-content">
+        <p>The <code>pr-description</code> skill reads git changes and generates a formatted PR description. It uses:</p>
+
+        <ul>
+          <li><code>git diff --cached</code> (or <code>git diff</code> if nothing is staged) to read changes</li>
+          <li><code>git log</code> to understand recent commit context</li>
+          <li>A template in <code>assets/pr-template.md</code> for consistent output formatting</li>
+        </ul>
+
+        <p>Study the SKILL.md in <code>courses/course-04-testing-iteration/skill/pr-description/SKILL.md</code> and notice:</p>
+
+        <ol>
+          <li><strong>Description</strong>: Includes trigger phrases like &ldquo;PR description&rdquo;, &ldquo;pull request&rdquo;, &ldquo;describe my changes&rdquo;</li>
+          <li><strong>Instructions</strong>: Specific git commands with fallback behavior</li>
+          <li><strong>Template reference</strong>: Points to <code>assets/pr-template.md</code></li>
+          <li><strong>Error handling</strong>: What to do when there&rsquo;s no diff, no git repo, etc.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Install the skill</span>
+      <div class="step-content">
+        <p>Copy the skill to your personal skills directory:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cp -r courses/course-04-testing-iteration/skill/pr-description ~/.claude/skills/pr-description</div>
+
+        <p>Verify the structure:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>ls -R ~/.claude/skills/pr-description/</div>
+
+        <p>You should see:</p>
+
+        <pre>SKILL.md
+assets/
+
+assets:
+pr-template.md</pre>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Study the test plan</span>
+      <div class="step-content">
+        <p>Open <code>courses/course-04-testing-iteration/test-plan.md</code>. This is the core deliverable of the course &mdash; a structured test plan organized by the three testing areas.</p>
+
+        <p>Notice how the test plan is organized:</p>
+
+        <ol>
+          <li><strong>Triggering tests</strong> &mdash; Split into &ldquo;Should trigger&rdquo; and &ldquo;Should NOT trigger&rdquo; with expected behavior for each</li>
+          <li><strong>Functional tests</strong> &mdash; Specific scenarios with Given/When/Then structure</li>
+          <li><strong>Edge case tests</strong> &mdash; Unusual inputs and error conditions</li>
+          <li><strong>Performance comparison</strong> &mdash; Before/after metrics to track</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Run triggering tests</span>
+      <div class="step-content">
+        <p>Open Claude Code in a git repository with some changes (staged or unstaged).</p>
+
+        <p><strong>Should-trigger tests</strong> &mdash; try each of these and record whether the skill activates:</p>
+
+        <div class="prompt-box-dark">Write a PR description for my changes</div>
+
+        <div class="prompt-box-dark">Generate a pull request description</div>
+
+        <div class="prompt-box-dark">Describe my changes for a PR</div>
+
+        <div class="prompt-box-dark">Help me write a description for this pull request</div>
+
+        <div class="prompt-box-dark">Summarize my changes</div>
+
+        <p>For each query, note:</p>
+        <ul>
+          <li>Did the skill trigger? (Look for structured output following the PR template)</li>
+          <li>If not, why? (Description mismatch? No git changes available?)</li>
+        </ul>
+
+        <p><strong>Should-NOT-trigger tests</strong> &mdash; verify these don&rsquo;t activate the skill:</p>
+
+        <div class="prompt-box-dark">Write a Python function that adds two numbers</div>
+
+        <div class="prompt-box-dark">Review this code for bugs</div>
+
+        <div class="prompt-box-dark">Help me fix this merge conflict</div>
+
+        <p>Record any false triggers. If the skill activates on &ldquo;review this code,&rdquo; your description overlaps with the <code>code-review-checklist</code> skill from Course 2.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Run functional tests</span>
+      <div class="step-content">
+        <p>For these, you need a git repo with actual changes. The simplest approach:</p>
+
+        <ol>
+          <li>Create a test repo: <code>mkdir /tmp/test-pr && cd /tmp/test-pr && git init</code></li>
+          <li>Create a file, commit it, then make changes</li>
+          <li>Run the skill against those changes</li>
+        </ol>
+
+        <p><strong>Test: Simple one-file change</strong></p>
+
+        <div class="terminal-block"><span class="comment"># Setup (run in terminal, not in Claude Code)</span>
+<span class="prompt">$ </span>mkdir -p /tmp/test-pr && cd /tmp/test-pr && git init
+<span class="prompt">$ </span>echo "hello" > app.py && git add . && git commit -m "initial"
+<span class="prompt">$ </span>echo "hello world" > app.py && git add .</div>
+
+        <p>Then in Claude Code (from <code>/tmp/test-pr</code>):</p>
+
+        <div class="prompt-box-dark">Write a PR description for my staged changes</div>
+
+        <p>Verify: Does the output follow the template? Does it mention <code>app.py</code>? Does it describe the change accurately?</p>
+
+        <p><strong>Test: Multi-file change</strong></p>
+
+        <p>Make changes across 3+ files and verify the skill summarizes all of them, not just the first.</p>
+
+        <p><strong>Test: No changes available</strong></p>
+
+        <p>In a clean repo with no changes:</p>
+
+        <div class="prompt-box-dark">Write a PR description</div>
+
+        <p>Verify: Does the skill handle this gracefully? It should tell you there are no changes to describe, not crash or produce an empty template.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Run your first iteration round</span>
+      <div class="step-content">
+        <p>Based on your triggering and functional test results, identify problems:</p>
+
+        <p><strong>If under-triggering</strong>: Add more keywords to the description. Common phrases users say that the skill should catch:</p>
+
+        <ul>
+          <li>&ldquo;PR summary&rdquo;</li>
+          <li>&ldquo;what should I put in the PR&rdquo;</li>
+          <li>&ldquo;describe these changes&rdquo;</li>
+          <li>&ldquo;write up my changes&rdquo;</li>
+        </ul>
+
+        <p><strong>If over-triggering</strong>: Make the description more specific. Add context like &ldquo;for a git pull request&rdquo; to distinguish from general &ldquo;describe my changes&rdquo; requests.</p>
+
+        <p><strong>If functional issues</strong>: Fix the instructions. Common problems:</p>
+
+        <ul>
+          <li>Claude runs <code>git diff</code> when changes are staged (should use <code>git diff --cached</code>)</li>
+          <li>Output doesn&rsquo;t follow the template format</li>
+          <li>Claude doesn&rsquo;t summarize &mdash; it just dumps the diff</li>
+        </ul>
+
+        <p>Make your changes to the SKILL.md, then re-run the failing tests.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Run a second iteration round</span>
+      <div class="step-content">
+        <p>After fixing the issues from round 1, re-run ALL tests (not just the ones that failed). This is important because:</p>
+
+        <ul>
+          <li>Fixing under-triggering might cause over-triggering</li>
+          <li>Fixing instructions might break the output format</li>
+          <li>Changes to one step might affect downstream steps</li>
+        </ul>
+
+        <p>Document what changed between rounds 1 and 2. The PDF recommends at least two rounds before considering a skill ready.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">8</span>
+      <span class="step-title">Run the performance comparison</span>
+      <div class="step-content">
+        <p>Do the same task with and without the skill. In a repo with real changes:</p>
+
+        <p><strong>Without the skill</strong> (temporarily rename the folder):</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>mv ~/.claude/skills/pr-description ~/.claude/skills/_pr-description-disabled</div>
+
+        <p>Ask Claude: &ldquo;Write a PR description for my changes.&rdquo; Note:</p>
+
+        <ul>
+          <li>How many messages before you get a usable result?</li>
+          <li>Does Claude ask for the right context, or do you have to guide it?</li>
+          <li>Is the output format consistent with how you&rsquo;d write a PR?</li>
+        </ul>
+
+        <p><strong>With the skill</strong> (restore it):</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>mv ~/.claude/skills/_pr-description-disabled ~/.claude/skills/pr-description</div>
+
+        <p>Ask the same question. Compare:</p>
+
+        <ul>
+          <li>Message count (likely fewer with the skill)</li>
+          <li>Output format consistency (template vs freeform)</li>
+          <li>Whether Claude reads the right git information without prompting</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li><strong>Complete the test plan</strong>: Run every query in <code>test-plan.md</code> and fill in the &ldquo;Actual Result&rdquo; column. Document any surprises &mdash; queries that triggered when they shouldn&rsquo;t have, or output that didn&rsquo;t match expectations.</li>
+      <li><strong>Two iteration rounds</strong>: Based on your test results, make at least two rounds of changes to the <code>pr-description</code> SKILL.md. For each round, document: what problem you found, what change you made (description? instructions? template?), whether the fix worked (re-test the failing queries), and whether the fix broke anything else (re-test passing queries).</li>
+      <li><strong>Test the <code>disable-model-invocation</code> field</strong>: Add <code>disable-model-invocation: true</code> to the pr-description skill&rsquo;s frontmatter. Verify that typing &ldquo;write a PR description&rdquo; no longer triggers the skill, that typing <code>/pr-description</code> still works, then remove the field when done (or keep it if you prefer manual-only invocation).</li>
+      <li><strong>Apply testing to an earlier skill</strong>: Pick either <code>daily-standup</code> or <code>code-review-checklist</code> from earlier courses. Write a test plan with at least 10 queries (5 triggering, 5 functional). Run all tests and document one iteration round of improvements.</li>
+      <li><strong>Measure the character budget</strong>: Install all four skills from courses 1&ndash;4. Ask Claude &ldquo;What skills are available?&rdquo; and verify all four appear. Then run <code>/context</code> and check if there are any warnings about excluded skills. Calculate the total character count of all your descriptions combined &mdash; are you approaching the 16,000-character fallback limit?</li>
+    </ol>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>~/.claude/skills/pr-description/SKILL.md</code> exists with correct casing</li>
+      <li><code>~/.claude/skills/pr-description/assets/pr-template.md</code> exists</li>
+      <li>YAML frontmatter has valid <code>---</code> delimiters</li>
+      <li><code>name</code> field is <code>pr-description</code> (kebab-case, matches folder)</li>
+      <li><code>description</code> follows <code>[What] + [When] + [Capabilities]</code> formula</li>
+      <li>No XML angle brackets in frontmatter</li>
+      <li>SKILL.md is under 500 lines</li>
+      <li><code>test-plan.md</code> has 15+ test queries organized by the three testing areas</li>
+      <li>All triggering tests (should-trigger) activate the skill</li>
+      <li>All triggering tests (should-NOT-trigger) do NOT activate the skill</li>
+      <li>Functional tests produce output matching the PR template</li>
+      <li>The skill handles &ldquo;no changes&rdquo; gracefully (no crash, clear message)</li>
+      <li>You&rsquo;ve completed at least two iteration rounds with documented changes</li>
+      <li>Performance comparison shows improvement with the skill vs without</li>
+      <li>The skill appears when you ask &ldquo;What skills are available?&rdquo;</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> In <a href="course-05-advanced-features.html">Course 5: Advanced Skill Features &mdash; Arguments, Dynamic Context, Subagent Execution</a>, you&rsquo;ll learn how to pass arguments to skills with <code>$ARGUMENTS</code>, <code>$ARGUMENTS[N]</code>, and <code>$N</code> shorthand, inject dynamic context with <code>!`command`</code> preprocessing syntax, run skills in isolated subagent contexts with <code>context: fork</code> and the <code>agent</code> field, control tools with <code>allowed-tools</code>, and use string substitutions like <code>${CLAUDE_SESSION_ID}</code>. You&rsquo;ll build an <strong>investigate-issue</strong> skill that uses a forked Explore agent to research GitHub issues.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-03-full-anatomy.html" class="prev">Full Skill Anatomy</a>
+      <a href="course-05-advanced-features.html" class="next">Advanced Features</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html" class="current">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
