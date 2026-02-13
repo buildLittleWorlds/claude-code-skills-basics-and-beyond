@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Full Skill Anatomy — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 1: Skills Fundamentals</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Full Skill Anatomy &mdash; Scripts, References, and Assets</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>3</strong> of 12</span>
+      <span class="meta-pill"><strong>Beginner-Intermediate</strong></span>
+      <span class="meta-pill">35 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">A single SKILL.md file works for simple skills, but real-world workflows need more: validation scripts, reference documentation, output templates. This course teaches you the complete skill folder structure &mdash; <code>scripts/</code>, <code>references/</code>, and <code>assets/</code> &mdash; progressive disclosure Level&nbsp;3, and how to keep SKILL.md focused by linking to supporting files. You&rsquo;ll build a <strong>meeting-to-actions</strong> skill that extracts action items from meeting notes, validates them with a Python script, and classifies them by urgency.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Course 1: Your First Skill in Five Minutes</strong> (skill folder basics, YAML frontmatter, naming rules)</li>
+        <li>Completed <strong>Course 2: Crafting Descriptions and Trigger Phrases</strong> (description formula, progressive disclosure L1/L2, specific instructions)</li>
+        <li>You understand the three-level progressive disclosure model (frontmatter, body, linked files)</li>
+        <li>You have the <code>daily-standup</code> and <code>code-review-checklist</code> skills installed</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>The Complete Skill Folder Structure</h3>
+
+    <p>In Courses 1 and 2, your skills were single files &mdash; a folder with only <code>SKILL.md</code>. That&rsquo;s enough for simple skills, but real-world workflows often need more: validation scripts, reference documentation, output templates.</p>
+
+    <p>The PDF guide (Chapter 1, p.10) lays out the full structure:</p>
+
+    <div class="file-tree">your-skill-name/
+&#9500;&#9472;&#9472; SKILL.md                    # Required - main skill file
+&#9500;&#9472;&#9472; scripts/                    # Optional - executable code
+&#9474;   &#9500;&#9472;&#9472; process_data.py
+&#9474;   &#9492;&#9472;&#9472; validate.sh
+&#9500;&#9472;&#9472; references/                 # Optional - documentation loaded as needed
+&#9474;   &#9500;&#9472;&#9472; api-guide.md
+&#9474;   &#9492;&#9472;&#9472; examples/
+&#9492;&#9472;&#9472; assets/                     # Optional - templates, fonts, icons
+    &#9492;&#9472;&#9472; report-template.md</div>
+
+    <p>Each directory serves a specific purpose:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Directory</th>
+          <th>Purpose</th>
+          <th>When Claude loads it</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>scripts/</code></td>
+          <td>Executable code (Python, Bash, etc.) that Claude runs during the workflow</td>
+          <td>When SKILL.md tells Claude to run a script</td>
+        </tr>
+        <tr>
+          <td><code>references/</code></td>
+          <td>Documentation, guides, domain knowledge that Claude reads for context</td>
+          <td>When Claude needs additional information referenced in SKILL.md</td>
+        </tr>
+        <tr>
+          <td><code>assets/</code></td>
+          <td>Templates, output formats, static files Claude uses to shape output</td>
+          <td>When Claude needs a template to fill in or a format to follow</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The skills docs confirm this structure with the same layout:</p>
+
+    <div class="file-tree">my-skill/
+&#9500;&#9472;&#9472; SKILL.md           # Main instructions (required)
+&#9500;&#9472;&#9472; template.md        # Template for Claude to fill in
+&#9500;&#9472;&#9472; examples/
+&#9474;   &#9492;&#9472;&#9472; sample.md      # Example output showing expected format
+&#9492;&#9472;&#9472; scripts/
+    &#9492;&#9472;&#9472; validate.sh    # Script Claude can execute</div>
+
+    <h3>Progressive Disclosure Level 3: Linked Files</h3>
+
+    <p>In Course 1, you learned the three levels of progressive disclosure. Courses 1 and 2 focused on Levels 1 and 2. Now it&rsquo;s time for Level 3.</p>
+
+    <p>From the PDF guide (Chapter 1, p.5):</p>
+
+    <blockquote>
+      <p>&ldquo;Third level (Linked files): Additional files bundled within the skill directory that Claude can choose to navigate and discover only as needed.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 1, p.5</cite>
+    </blockquote>
+
+    <p>This is the key architectural insight for building complex skills. Instead of cramming everything into SKILL.md (which would bloat every invocation with unnecessary tokens), you link to supporting files and let Claude load them only when relevant.</p>
+
+    <p>The skills docs explain the rationale:</p>
+
+    <blockquote>
+      <p>&ldquo;Skills can include multiple files in their directory. This keeps SKILL.md focused on the essentials while letting Claude access detailed reference material only when needed. Large reference docs, API specifications, or example collections don&rsquo;t need to load into context every time the skill runs.&rdquo;</p>
+      <cite>Claude Code Skills Docs</cite>
+    </blockquote>
+
+    <h3>Referencing Supporting Files from SKILL.md</h3>
+
+    <p>Claude won&rsquo;t discover files in your skill directory unless you tell it they exist. The skills docs provide the pattern:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">Referencing pattern in SKILL.md</div>
+      <pre>## Additional resources
+
+- For complete API details, see [reference.md](reference.md)
+- For usage examples, see [examples.md](examples.md)</pre>
+    </div>
+
+    <p>This is a simple but critical pattern. Each reference should tell Claude:</p>
+
+    <ol>
+      <li><strong>What</strong> the file contains (so Claude can decide whether to load it)</li>
+      <li><strong>When</strong> to consult it (so Claude doesn&rsquo;t load everything by default)</li>
+    </ol>
+
+    <p>Here&rsquo;s a more concrete example from a real skill:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">Contextual reference example</div>
+      <pre>## References
+
+- Before writing queries, consult `references/api-patterns.md` for:
+  - Rate limiting guidance
+  - Pagination patterns
+  - Error codes and handling</pre>
+    </div>
+
+    <p>This tells Claude what&rsquo;s in the file <em>and</em> when to read it (&ldquo;before writing queries&rdquo;). Claude can skip the reference entirely if the current task doesn&rsquo;t involve queries.</p>
+
+    <h3>Keeping SKILL.md Under 500 Lines</h3>
+
+    <p>The skills docs give a clear guideline:</p>
+
+    <blockquote>
+      <p>&ldquo;Keep SKILL.md under 500 lines. Move detailed reference material to separate files.&rdquo;</p>
+      <cite>Claude Code Skills Docs</cite>
+    </blockquote>
+
+    <p>This matters for two reasons from the PDF&rsquo;s troubleshooting section (Chapter 5, p.27):</p>
+
+    <ol>
+      <li><strong>Large context issues</strong>: &ldquo;Skill content too large&rdquo; causes slow or degraded responses</li>
+      <li><strong>Instructions not followed</strong>: When instructions are too verbose, Claude may ignore parts. The fix is: &ldquo;Keep instructions concise. Use bullet points and numbered lists. Move detailed reference to separate files.&rdquo;</li>
+    </ol>
+
+    <p>The solution from the troubleshooting guide:</p>
+
+    <blockquote>
+      <p>&ldquo;Optimize SKILL.md size: Move detailed docs to references/. Link to references instead of inline. Keep SKILL.md under 5,000 words.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 5, p.27</cite>
+    </blockquote>
+
+    <p>Your SKILL.md should contain:</p>
+
+    <ul>
+      <li>Core workflow steps (the &ldquo;what to do&rdquo; sequence)</li>
+      <li>Pointers to references (the &ldquo;where to learn more&rdquo;)</li>
+      <li>Error handling for common cases</li>
+    </ul>
+
+    <p>Everything else goes into <code>references/</code> or <code>assets/</code>.</p>
+
+    <h3>Running Scripts from Within a Skill</h3>
+
+    <p>The PDF guide&rsquo;s Iterative Refinement pattern (Chapter 5, p.23) shows how scripts integrate into a skill workflow:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">Iterative refinement pattern</div>
+      <pre>### Quality Check
+1. Run validation script: `scripts/check_report.py`
+2. Identify issues:
+   - Missing sections
+   - Inconsistent formatting
+   - Data validation errors
+
+### Refinement Loop
+1. Address each identified issue
+2. Regenerate affected sections
+3. Re-validate
+4. Repeat until quality threshold met</pre>
+    </div>
+
+    <p>The key insight: scripts provide <strong>deterministic validation</strong> that doesn&rsquo;t depend on Claude&rsquo;s judgment. As the PDF notes (Chapter 5, p.26):</p>
+
+    <blockquote>
+      <p>&ldquo;For critical validations, consider bundling a script that performs the checks programmatically rather than relying on language instructions. Code is deterministic; language interpretation isn&rsquo;t.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 5, p.26</cite>
+    </blockquote>
+
+    <p>This is why the <code>meeting-to-actions</code> skill you&rsquo;ll build includes a Python validation script &mdash; rather than asking Claude to &ldquo;make sure every action item has an owner&rdquo;, the script checks programmatically and reports exactly what&rsquo;s missing.</p>
+
+    <h3>The <code>compatibility</code> Frontmatter Field</h3>
+
+    <p>The PDF guide (Chapter 1, p.11) describes an optional frontmatter field for specifying environment requirements:</p>
+
+    <blockquote>
+      <p>&ldquo;<strong>compatibility</strong> (optional): 1&ndash;500 characters. Indicates environment requirements: e.g. intended product, required system packages, network access needs, etc.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 1, p.11</cite>
+    </blockquote>
+
+    <p>From the PDF&rsquo;s Reference B section:</p>
+
+    <div class="yaml-block"><span class="yaml-key">name:</span> <span class="yaml-value">skill-name</span>
+<span class="yaml-key">description:</span> <span class="yaml-value">[required description]</span>
+<span class="yaml-key">license:</span> <span class="yaml-value">MIT</span>
+<span class="yaml-key">allowed-tools:</span> <span class="yaml-value">"Bash(python:*) Bash(npm:*) WebFetch"</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">author:</span> <span class="yaml-value">Company Name</span>
+  <span class="yaml-key">version:</span> <span class="yaml-value">1.0.0</span>
+  <span class="yaml-key">mcp-server:</span> <span class="yaml-value">server-name</span>
+  <span class="yaml-key">category:</span> <span class="yaml-value">productivity</span>
+  <span class="yaml-key">tags:</span> <span class="yaml-value">[project-management, automation]</span></div>
+
+    <p>Use <code>compatibility</code> when your skill requires specific tools to be available. For the meeting-to-actions skill, we&rsquo;ll note it requires Python 3, since the validation script is written in Python.</p>
+
+    <h3>The <code>metadata</code> Frontmatter Field</h3>
+
+    <p>The PDF guide (Chapter 1, p.11) also describes <code>metadata</code>:</p>
+
+    <blockquote>
+      <p>&ldquo;<strong>metadata</strong> (optional): Any custom key-value pairs. Suggested: author, version, mcp-server.&rdquo;</p>
+      <cite>Claude Code Skills Guide &mdash; Chapter 1, p.11</cite>
+    </blockquote>
+
+    <p>This is useful for tracking versions and authorship as skills evolve. When you distribute a skill to a team, the metadata helps users know which version they&rsquo;re running and who to contact for issues.</p>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li>PDF Guide: Chapter 1 &ldquo;Fundamentals&rdquo; (p.5) &mdash; Three-level progressive disclosure, linked files</li>
+        <li>PDF Guide: Chapter 1 &ldquo;Technical Requirements&rdquo; (p.10) &mdash; File structure diagram, compatibility field</li>
+        <li>PDF Guide: Chapter 5 &ldquo;Patterns&rdquo; (p.23) &mdash; Iterative refinement pattern with scripts</li>
+        <li>PDF Guide: Chapter 5 &ldquo;Troubleshooting&rdquo; (pp.26&ndash;27) &mdash; Large context issues, SKILL.md sizing</li>
+        <li>Skills docs: &ldquo;Add supporting files&rdquo; section &mdash; File layout, referencing pattern</li>
+        <li>Skills docs: &ldquo;Frontmatter reference&rdquo; section &mdash; All optional fields</li>
+      </ul>
+    </div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>A <strong>meeting-to-actions</strong> skill that extracts action items from meeting notes, validates them with a script, and classifies them by urgency. This demonstrates Course 3 concepts because:</p>
+
+    <div class="callout info">
+      <ul>
+        <li>It uses <strong>all four directories</strong>: SKILL.md + <code>scripts/</code> + <code>references/</code> + <code>assets/</code></li>
+        <li>The <code>scripts/validate_actions.py</code> script provides <strong>deterministic validation</strong> &mdash; checking that every action item has an owner and deadline without relying on Claude&rsquo;s judgment</li>
+        <li>The <code>references/prioritization-guide.md</code> contains <strong>domain knowledge</strong> (Eisenhower matrix) that Claude consults only when classifying urgency &mdash; not loaded by default</li>
+        <li>The <code>assets/action-template.md</code> provides an <strong>output template</strong> that ensures consistent formatting across invocations</li>
+        <li>SKILL.md stays <strong>focused and concise</strong> &mdash; the workflow steps, with pointers to supporting files</li>
+      </ul>
+    </div>
+
+    <p>Here&rsquo;s how the pieces fit together:</p>
+
+    <div class="file-tree">meeting-to-actions/
+&#9500;&#9472;&#9472; SKILL.md                          # Workflow: extract -> validate -> classify -> format
+&#9500;&#9472;&#9472; scripts/
+&#9474;   &#9492;&#9472;&#9472; validate_actions.py           # Checks: owner + deadline on every item
+&#9500;&#9472;&#9472; references/
+&#9474;   &#9492;&#9472;&#9472; prioritization-guide.md       # Eisenhower matrix for urgency classification
+&#9492;&#9472;&#9472; assets/
+    &#9492;&#9472;&#9472; action-template.md            # Output format template</div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Understand the directory structure</span>
+      <div class="step-content">
+        <p>Each file in the skill has a clear responsibility:</p>
+
+        <table class="tool-table">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Role</th>
+              <th>When loaded</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>SKILL.md</code></td>
+              <td>Orchestrates the 4-step workflow</td>
+              <td>When skill is invoked (Level 2)</td>
+            </tr>
+            <tr>
+              <td><code>scripts/validate_actions.py</code></td>
+              <td>Validates each action has owner + deadline</td>
+              <td>When Step 2 runs the script</td>
+            </tr>
+            <tr>
+              <td><code>references/prioritization-guide.md</code></td>
+              <td>Eisenhower matrix classification rules</td>
+              <td>When Step 3 needs urgency criteria</td>
+            </tr>
+            <tr>
+              <td><code>assets/action-template.md</code></td>
+              <td>Markdown template for final output</td>
+              <td>When Step 4 formats the results</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Study the SKILL.md</span>
+      <div class="step-content">
+        <p>Open <code>courses/course-03-full-anatomy/skill/meeting-to-actions/SKILL.md</code> and notice:</p>
+
+        <ol>
+          <li><strong>Frontmatter</strong>: Uses the description formula from Course 2, plus <code>compatibility</code> and <code>metadata</code></li>
+          <li><strong>Workflow steps</strong>: Four clear numbered steps &mdash; extract, validate, classify, format</li>
+          <li><strong>Script invocation</strong>: Step 2 tells Claude exactly what command to run and what the output means</li>
+          <li><strong>Reference links</strong>: Step 3 points to <code>references/prioritization-guide.md</code> with a clear &ldquo;when to consult&rdquo; instruction</li>
+          <li><strong>Asset usage</strong>: Step 4 points to <code>assets/action-template.md</code> for the output format</li>
+          <li><strong>Troubleshooting</strong>: Common issues with specific fixes</li>
+        </ol>
+
+        <p>The body is well under 500 lines because the classification rules and template are in separate files.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Study the validation script</span>
+      <div class="step-content">
+        <p>Open <code>courses/course-03-full-anatomy/skill/meeting-to-actions/scripts/validate_actions.py</code> and notice:</p>
+
+        <ul>
+          <li>It reads JSON from stdin (Claude pipes action items to it)</li>
+          <li>It checks each item for required fields: <code>owner</code> and <code>deadline</code></li>
+          <li>It validates deadline format (YYYY-MM-DD)</li>
+          <li>It outputs clear, structured results that Claude can parse</li>
+          <li>It exits with code 0 (all valid) or 1 (issues found) &mdash; Claude can branch on this</li>
+        </ul>
+
+        <p>This is the &ldquo;deterministic validation&rdquo; pattern from the PDF. Instead of asking Claude &ldquo;does every item have an owner?&rdquo;, the script checks and returns a precise answer.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Study the reference guide</span>
+      <div class="step-content">
+        <p>Open <code>courses/course-03-full-anatomy/skill/meeting-to-actions/references/prioritization-guide.md</code>. This contains the Eisenhower matrix classification rules &mdash; domain knowledge Claude consults only during the classification step.</p>
+
+        <p>Notice that SKILL.md doesn&rsquo;t inline these rules. Instead, it says: &ldquo;Consult <code>references/prioritization-guide.md</code> for the classification criteria.&rdquo; This keeps SKILL.md focused on the workflow while making the classification rules available when needed.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Study the asset template</span>
+      <div class="step-content">
+        <p>Open <code>courses/course-03-full-anatomy/skill/meeting-to-actions/assets/action-template.md</code>. This is the output format Claude fills in at Step 4.</p>
+
+        <p>Templates serve two purposes:</p>
+        <ol>
+          <li><strong>Consistency</strong>: Every invocation produces the same structure</li>
+          <li><strong>Completeness</strong>: The template reminds Claude to include all required sections</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Install and test</span>
+      <div class="step-content">
+        <p>Copy the skill to your personal skills directory:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cp -r courses/course-03-full-anatomy/skill/meeting-to-actions ~/.claude/skills/meeting-to-actions</div>
+
+        <p>Verify the structure:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>ls -R ~/.claude/skills/meeting-to-actions/</div>
+
+        <p>You should see:</p>
+
+        <pre>SKILL.md
+assets/
+references/
+scripts/
+
+assets:
+action-template.md
+
+references:
+prioritization-guide.md
+
+scripts:
+validate_actions.py</pre>
+
+        <p>Make the script executable:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>chmod +x ~/.claude/skills/meeting-to-actions/scripts/validate_actions.py</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Test with sample meeting notes</span>
+      <div class="step-content">
+        <p>Open Claude Code and paste sample meeting notes:</p>
+
+        <div class="prompt-box-dark">Extract action items from these meeting notes:
+
+Sprint Planning - Feb 10
+Attendees: Sarah, Mike, Alex, Jordan
+
+Sarah presented the Q1 roadmap. We agreed to prioritize the auth
+refactor over the dashboard redesign.
+
+Mike will migrate the user service to the new API by Feb 21.
+Alex needs to fix the payment timeout bug before the release on Friday.
+Sarah volunteered to write the technical spec for the notification
+system - no hard deadline but ideally by end of month.
+Jordan will set up the staging environment for the new auth flow
+by next Wednesday.
+
+We also discussed the flaky test suite but didn't assign anyone yet.
+The team agreed we need to address it soon.
+
+Next meeting: Feb 17</div>
+
+        <p>Watch for:</p>
+        <ol>
+          <li>Claude extracts action items from the prose</li>
+          <li>Claude runs <code>validate_actions.py</code> to check each item</li>
+          <li>Claude consults the prioritization guide to classify urgency</li>
+          <li>Claude formats output using the action template</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">8</span>
+      <span class="step-title">Test with missing data</span>
+      <div class="step-content">
+        <p>Try meeting notes where some action items are vague:</p>
+
+        <div class="prompt-box-dark">Extract actions from this meeting:
+
+Quick sync - Feb 11
+Someone should update the docs.
+We need to look into the performance issue.
+Bob will handle the deployment.</div>
+
+        <p>The validation script should flag issues:</p>
+        <ul>
+          <li>&ldquo;Update the docs&rdquo; has no owner and no deadline</li>
+          <li>&ldquo;Performance issue&rdquo; has no owner and no deadline</li>
+          <li>&ldquo;Bob will handle the deployment&rdquo; has no deadline</li>
+        </ul>
+
+        <p>Claude should report these validation failures and either ask you for clarification or make reasonable suggestions.</p>
+      </div>
+    </div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li><strong>Add a new reference file</strong>: Create <code>references/meeting-formats.md</code> that describes common meeting types (standup, sprint planning, retro, 1-on-1) and what kinds of action items to expect from each. Update SKILL.md to point to it with instructions like &ldquo;If the meeting type is identifiable, consult <code>references/meeting-formats.md</code> for extraction heuristics.&rdquo; Test with different meeting types.</li>
+      <li><strong>Add a second script</strong>: Create <code>scripts/export_actions.py</code> that takes the validated action items (JSON from stdin) and outputs them in CSV format (owner, action, deadline, priority). Update SKILL.md to add a Step 5: &ldquo;If the user requests CSV export, run <code>python scripts/export_actions.py</code>.&rdquo; Test by asking Claude to export the action items as CSV.</li>
+      <li><strong>Test the 500-line principle</strong>: Open SKILL.md and count its lines. Now imagine inlining the entire prioritization guide and the template. How many lines would that be? Compare the two versions &mdash; the linked version stays focused on workflow, while the inlined version buries the steps in reference material.</li>
+      <li><strong>Build a stripped-down skill</strong>: Create a <code>quick-actions</code> skill at <code>~/.claude/skills/quick-actions/SKILL.md</code> that does the same extraction but with NO supporting files &mdash; everything in SKILL.md. Compare the experience: how does output consistency compare? How does Claude&rsquo;s behavior differ when classification rules are inline vs in a reference? This demonstrates why the multi-file pattern exists.</li>
+      <li><strong>Modify the validation script</strong>: Add a new validation check to <code>validate_actions.py</code> that flags action items with deadlines in the past. Test with meeting notes that include expired deadlines. This demonstrates how script changes improve skill quality without touching SKILL.md.</li>
+    </ol>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>~/.claude/skills/meeting-to-actions/SKILL.md</code> exists with correct casing</li>
+      <li><code>~/.claude/skills/meeting-to-actions/scripts/validate_actions.py</code> exists and is executable</li>
+      <li><code>~/.claude/skills/meeting-to-actions/references/prioritization-guide.md</code> exists</li>
+      <li><code>~/.claude/skills/meeting-to-actions/assets/action-template.md</code> exists</li>
+      <li>YAML frontmatter has valid <code>---</code> delimiters</li>
+      <li><code>name</code> field is <code>meeting-to-actions</code> (kebab-case, matches folder)</li>
+      <li><code>description</code> follows <code>[What] + [When] + [Capabilities]</code> formula</li>
+      <li>No XML angle brackets in frontmatter</li>
+      <li><code>compatibility</code> field mentions Python 3 requirement</li>
+      <li>SKILL.md references all three supporting files with clear &ldquo;when to consult&rdquo; instructions</li>
+      <li>SKILL.md is well under 500 lines</li>
+      <li>Pasting meeting notes triggers the skill automatically</li>
+      <li>Running <code>/meeting-to-actions</code> invokes the skill directly</li>
+      <li>Claude runs <code>validate_actions.py</code> during the workflow</li>
+      <li>Claude consults the prioritization guide for classification</li>
+      <li>Output follows the action template format</li>
+      <li>Action items with missing owners or deadlines are flagged by the script</li>
+      <li>The skill appears when you ask &ldquo;What skills are available?&rdquo;</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> In <a href="course-04-testing-iteration.html">Course 4: Testing, Iteration, and the Feedback Loop</a>, you&rsquo;ll learn the three testing areas (triggering tests, functional tests, performance comparison), how to design &ldquo;should trigger&rdquo; and &ldquo;should NOT trigger&rdquo; test suites, diagnosing under-triggering vs over-triggering with iteration, performance baselines (message count, token usage, failed tool calls), and the <code>disable-model-invocation: true</code> field for manual-only skills. You&rsquo;ll build a <strong>pr-description</strong> skill with a comprehensive test plan of 15+ queries.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-02-descriptions-and-triggers.html" class="prev">Descriptions &amp; Triggers</a>
+      <a href="course-04-testing-iteration.html" class="next">Testing &amp; Iteration</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html" class="current">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
