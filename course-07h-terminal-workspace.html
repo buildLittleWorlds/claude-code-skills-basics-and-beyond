@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal Workspace — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Bridge</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Terminal Workspace &mdash; Five tmux Patterns for Multi-Agent Work</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>7&frac12;</strong> of 12</span>
+      <span class="meta-pill"><strong>Intermediate</strong></span>
+      <span class="meta-pill">20 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">Courses 1&ndash;7 taught you to build skills, test them, and add hooks &mdash; all within a single Claude Code session. The remaining courses go further: Course 8 monitors custom subagents running in separate contexts, Course 9 wraps AI + CLI tools into reusable commands, Course 10 orchestrates agent teams working in parallel, and Course 11 ties everything together with session scripts. All of these require you to <strong>see and manage multiple terminal processes at once</strong>. That&rsquo;s what tmux does. This bridge course makes sure you have the specific tmux skills those courses need.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Courses 1&ndash;7 completed (skills fundamentals, hooks)</li>
+        <li>tmux installed (<code>tmux -V</code> should show 3.0 or higher; install with <code>brew install tmux</code> on macOS)</li>
+        <li>Basic command line familiarity</li>
+      </ul>
+    </div>
+
+    <!-- BEFORE YOU CONTINUE -->
+    <div class="callout warning">
+      <p><strong>Before You Continue:</strong> This course is <strong>not</strong> a tmux tutorial. It&rsquo;s a checkpoint. If you haven&rsquo;t used tmux before, complete the beginner tutorial first:</p>
+      <p><code>/Users/familyplate/work/learning-tools/tmux-claude/tmux-claude-tutor.md</code></p>
+      <p>That tutorial teaches tmux from scratch across 10 lessons &mdash; sessions, panes, windows, copy mode, and headless agents. Come back here once you&rsquo;ve finished it (or if you already know tmux basics).</p>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>The Ctrl+J Prefix Convention</h2>
+
+    <p>This curriculum uses <code>Ctrl+J</code> as the tmux prefix key instead of the default <code>Ctrl+b</code>. All tmux commands in Courses 7&frac12;&ndash;11 assume this prefix.</p>
+
+    <p><strong>How prefix commands work:</strong></p>
+
+    <ol>
+      <li>Press <code>Ctrl+J</code> (hold Ctrl, tap j, release both)</li>
+      <li>Then press the next key separately (don&rsquo;t hold Ctrl)</li>
+    </ol>
+
+    <p>Example: <code>Ctrl+J %</code> means press <code>Ctrl+J</code>, release, then press <code>%</code>.</p>
+
+    <p><strong>To configure <code>Ctrl+J</code></strong>, add to <code>~/.tmux.conf</code>:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>cat &lt;&lt;'EOF' &gt;&gt; ~/.tmux.conf
+unbind C-b
+unbind C-j
+unbind C-a
+set-option -g prefix C-j
+bind-key C-j send-prefix
+EOF</div>
+
+    <p><strong>Recommended additions</strong> for working with AI CLIs:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">~/.tmux.conf (recommended additions)</div>
+      <pre># True color support (for syntax highlighting)
+set -g default-terminal "xterm-256color"
+set-option -ga terminal-overrides ",xterm-256color:Tc"
+
+# Large scrollback (AI responses can be long)
+set -g history-limit 50000
+
+# Mouse support (easier scrolling)
+set -g mouse on</pre>
+    </div>
+
+    <p>Reload with: <code>tmux source ~/.tmux.conf</code></p>
+
+    <p>If you prefer a different prefix key, that&rsquo;s fine &mdash; mentally substitute it wherever you see <code>Ctrl+J</code> in these courses.</p>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- FIVE TMUX PATTERNS -->
+    <h2>Five tmux Patterns You Need</h2>
+
+    <p>Courses 8&ndash;11 use five specific tmux patterns. You don&rsquo;t need to memorize every tmux command &mdash; just these five.</p>
+
+    <h3>Pattern 1: Split Panes</h3>
+
+    <p>Split your terminal into side-by-side or stacked areas. Used in Course 8 to monitor a subagent in one pane while testing in another.</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Ctrl+J %</code></td>
+          <td>Split vertically (left/right)</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl+J "</code></td>
+          <td>Split horizontally (top/bottom)</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl+J arrow</code></td>
+          <td>Move focus between panes</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl+J x</code></td>
+          <td>Close current pane</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl+J z</code></td>
+          <td>Zoom current pane to full screen (toggle)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The workflow</strong>: Claude runs in the right pane. You test and verify in the left pane. You can watch Claude&rsquo;s progress and switch over to test immediately.</p>
+
+    <h3>Pattern 2: Detached Sessions</h3>
+
+    <p>Create sessions that run in the background, invisible until you attach. Used in Course 8 for headless agents and Course 10 for background teammates.</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>tmux new-session -d -s name</code></td>
+          <td>Create a detached session</td>
+        </tr>
+        <tr>
+          <td><code>tmux new-session -d -s name "command"</code></td>
+          <td>Create a detached session running a command</td>
+        </tr>
+        <tr>
+          <td><code>tmux attach -t name</code></td>
+          <td>Attach to a session (enter it)</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl+J d</code></td>
+          <td>Detach from current session</td>
+        </tr>
+        <tr>
+          <td><code>tmux kill-session -t name</code></td>
+          <td>Destroy a session</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The workflow</strong>: Start Claude in a detached session, continue working in your current terminal, then attach to check on it when needed.</p>
+
+    <h3>Pattern 3: Send Commands to Sessions</h3>
+
+    <p>Inject commands into a running session from the outside. Used in Course 9 for scripted CLI workflows and Course 10 for orchestrating agent teams.</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>tmux send-keys -t session 'command' Enter</code></td>
+          <td>Send a command to a session</td>
+        </tr>
+        <tr>
+          <td><code>tmux send-keys -t session:0.1 'command' Enter</code></td>
+          <td>Send to a specific pane (window 0, pane 1)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The workflow</strong>: A control script creates agent sessions and sends each one its initial prompt &mdash; no manual typing required.</p>
+
+    <h3>Pattern 4: Capture Session Output</h3>
+
+    <p>Read what a session has produced without attaching to it. Used in Course 8 for checking subagent progress and Course 10 for building monitoring dashboards.</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>tmux capture-pane -t session -p</code></td>
+          <td>Print the visible contents of a session&rsquo;s pane</td>
+        </tr>
+        <tr>
+          <td><code>tmux capture-pane -t session -p -S -30</code></td>
+          <td>Capture the last 30 lines</td>
+        </tr>
+        <tr>
+          <td><code>tmux capture-pane -t session:0.1 -p</code></td>
+          <td>Capture from a specific pane</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The workflow</strong>: Peek at an agent&rsquo;s output without interrupting it. Pipe into <code>tail</code> or <code>grep</code> to extract what you need:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>tmux capture-pane -t agent -p | tail -5
+<span class="prompt">$ </span>tmux capture-pane -t agent -p | grep "Error"</div>
+
+    <h3>Pattern 5: Session Listing and Switching</h3>
+
+    <p>See all running sessions and jump between them. Used whenever you&rsquo;re managing multiple agent sessions.</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>tmux ls</code></td>
+          <td>List all sessions</td>
+        </tr>
+        <tr>
+          <td><code>tmux has-session -t name 2>/dev/null</code></td>
+          <td>Check if a session exists (for scripts)</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl+J s</code></td>
+          <td>Interactive session picker</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl+J (</code></td>
+          <td>Switch to previous session</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl+J )</code></td>
+          <td>Switch to next session</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The workflow</strong>: You have a control session and three agent sessions. Use <code>Ctrl+J s</code> to see them all and jump to whichever needs attention.</p>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <p>Work through these four exercises to verify you can perform the patterns above. Each builds on the last.</p>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Split Panes</span>
+      <div class="step-content">
+        <p>Start a tmux session named &ldquo;workspace&rdquo;:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux new -s workspace</div>
+
+        <p>Split vertically into two panes:</p>
+
+        <pre>Ctrl+J %</pre>
+
+        <p>In the left pane, run:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>echo "left pane"</div>
+
+        <p>Move to the right pane (<code>Ctrl+J right-arrow</code>) and run:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>echo "right pane"</div>
+
+        <p>Verify both outputs are visible side by side.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Detached Sessions</span>
+      <div class="step-content">
+        <p>From inside your &ldquo;workspace&rdquo; session, create a detached background session:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux new-session -d -s bg-test "sleep 30"</div>
+
+        <p>List sessions to confirm it&rsquo;s running:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux ls</div>
+
+        <p>You should see both <code>workspace</code> and <code>bg-test</code>.</p>
+
+        <p>Attach to the background session:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux attach -t bg-test</div>
+
+        <p>Detach back to workspace: <code>Ctrl+J d</code></p>
+
+        <p>Reattach to workspace:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux attach -t workspace</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Send Commands and Capture Output</span>
+      <div class="step-content">
+        <p>Send a command into the background session from your workspace:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux send-keys -t bg-test 'echo "hello from outside"' Enter</div>
+
+        <p>Capture the output without attaching:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux capture-pane -t bg-test -p | tail -5</div>
+
+        <p>You should see <code>hello from outside</code> in the captured output.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Clean Up</span>
+      <div class="step-content">
+        <p>Kill the background session:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux kill-session -t bg-test</div>
+
+        <p>Verify it&rsquo;s gone:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux ls</div>
+
+        <p>Only <code>workspace</code> should remain.</p>
+
+        <p>(Optional) Kill workspace too when done:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux kill-session -t workspace</div>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <p>Run through this checklist to confirm you&rsquo;re ready for Courses 8&ndash;11:</p>
+
+    <ul class="checklist">
+      <li>tmux is installed (<code>tmux -V</code> shows 3.0+)</li>
+      <li>Your prefix key is configured (<code>Ctrl+J</code> or your preference)</li>
+      <li>You can split panes and navigate between them</li>
+      <li>You can create and attach to detached sessions</li>
+      <li>You can send commands to a detached session with <code>send-keys</code></li>
+      <li>You can capture a session&rsquo;s output with <code>capture-pane</code></li>
+      <li>You can list sessions and switch between them</li>
+    </ul>
+
+    <p>If any of these feel unfamiliar, work through the relevant lesson in the beginner tutorial before continuing.</p>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> You&rsquo;re ready for the advanced track. <a href="course-08-custom-subagents.html">Course 8: Custom Subagents</a> introduces specialized AI workers, and you&rsquo;ll use tmux to monitor them in action.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-07-hooks.html" class="prev">Hooks</a>
+      <a href="course-08-custom-subagents.html" class="next">Custom Subagents</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html" class="current">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
