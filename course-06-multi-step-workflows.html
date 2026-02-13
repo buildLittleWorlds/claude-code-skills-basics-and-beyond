@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Step Workflows — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 1: Skills Fundamentals</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Multi-Step Workflows &mdash; Sequential Orchestration, Validation Gates, Error Handling</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>6</strong> of 12</span>
+      <span class="meta-pill"><strong>Intermediate</strong></span>
+      <span class="meta-pill">35 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">In Courses 1&ndash;5, your skills handled individual tasks &mdash; generate a standup, review a PR, investigate an issue. Real workflows are harder: steps depend on each other, validation must happen between stages, and errors need specific handling to avoid infinite loops or silent failures. This course introduces two workflow patterns from the PDF guide &mdash; <strong>Sequential Workflow Orchestration</strong> (Pattern 1) and <strong>Iterative Refinement</strong> (Pattern 3) &mdash; and shows how to combine them into skills that proceed step-by-step, validate at checkpoints, and refine until quality criteria are met. You&rsquo;ll build a <strong>project-scaffolder</strong> skill that gathers requirements, generates files, validates the result with a Python script, and iteratively fixes any issues.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li><strong>Course 1</strong>: Skill structure basics (SKILL.md, frontmatter, installation locations)</li>
+        <li><strong>Course 2</strong>: Description formula (<code>[What] + [When] + [Capabilities]</code>), reference vs task content</li>
+        <li><strong>Course 3</strong>: Supporting files (scripts/, references/, assets/), progressive disclosure Level 3</li>
+        <li><strong>Course 4</strong>: Testing methodology (triggering, functional, performance tests), iteration signals</li>
+        <li><strong>Course 5</strong>: <code>$ARGUMENTS</code>, dynamic context (<code>!`command`</code>), <code>context: fork</code>, <code>allowed-tools</code></li>
+        <li>You should be comfortable building skills with supporting files and running validation scripts</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>Pattern 1: Sequential Workflow Orchestration</h3>
+
+    <p>The PDF guide (Chapter 5, p.22) identifies this as the first major skill pattern:</p>
+
+    <blockquote>
+      <p><strong>Use when:</strong> Your users need multi-step processes in a specific order.</p>
+      <cite>PDF Guide, Chapter 5</cite>
+    </blockquote>
+
+    <p>The PDF provides this example structure:</p>
+
+    <pre>## Workflow: Onboard New Customer
+
+### Step 1: Create Account
+Call MCP tool: `create_customer`
+Parameters: name, email, company
+
+### Step 2: Setup Payment
+Call MCP tool: `setup_payment_method`
+Wait for: payment method verification
+
+### Step 3: Create Subscription
+Call MCP tool: `create_subscription`
+Parameters: plan_id, customer_id (from Step 1)
+
+### Step 4: Send Welcome Email
+Call MCP tool: `send_email`
+Template: welcome_email_template</pre>
+
+    <p>The key techniques the PDF calls out are:</p>
+
+    <ul>
+      <li><strong>Explicit step ordering</strong> &mdash; each step is numbered and named</li>
+      <li><strong>Dependencies between steps</strong> &mdash; Step 3 uses <code>customer_id (from Step 1)</code></li>
+      <li><strong>Validation at each stage</strong> &mdash; Step 2 has an explicit <code>Wait for: payment method verification</code></li>
+      <li><strong>Rollback instructions for failures</strong> &mdash; what to do if Step 3 fails after Step 1 succeeded</li>
+    </ul>
+
+    <p>This differs from Course 3&rsquo;s <code>meeting-to-actions</code> skill, which also had numbered steps. The distinction is that <em>sequential workflow orchestration</em> explicitly encodes dependencies and validation gates between steps, not just order. In Course 3, each step was relatively independent &mdash; if classification failed, you could still produce output. In a sequential workflow, if Step 1 fails, Step 2 cannot proceed.</p>
+
+    <h3>Pattern 3: Iterative Refinement</h3>
+
+    <p>The PDF (Chapter 5, p.23) describes this second pattern we&rsquo;ll use:</p>
+
+    <blockquote>
+      <p><strong>Use when:</strong> Output quality improves with iteration.</p>
+      <cite>PDF Guide, Chapter 5</cite>
+    </blockquote>
+
+    <p>The PDF&rsquo;s example for iterative report generation:</p>
+
+    <pre>## Iterative Report Creation
+
+### Initial Draft
+1. Fetch data via MCP
+2. Generate first draft report
+3. Save to temporary file
+
+### Quality Check
+1. Run validation script: `scripts/check_report.py`
+2. Identify issues:
+   - Missing sections
+   - Inconsistent formatting
+   - Data validation errors
+
+### Refinement Loop
+1. Address each identified issue
+2. Regenerate affected sections
+3. Re-validate
+4. Repeat until quality threshold met
+
+### Finalization
+1. Apply final formatting
+2. Generate summary
+3. Save final version</pre>
+
+    <p>The key techniques:</p>
+
+    <ul>
+      <li><strong>Explicit quality criteria</strong> &mdash; the validation script defines what &ldquo;good&rdquo; means</li>
+      <li><strong>Iterative improvement</strong> &mdash; a structured loop, not open-ended revision</li>
+      <li><strong>Validation scripts</strong> &mdash; deterministic checks, not subjective judgment</li>
+      <li><strong>Know when to stop iterating</strong> &mdash; &ldquo;repeat until quality threshold met&rdquo; prevents infinite loops</li>
+    </ul>
+
+    <h3>Combining Both Patterns</h3>
+
+    <p>The most powerful skills combine sequential orchestration with iterative refinement. Your workflow proceeds step-by-step (Pattern 1), and at validation checkpoints, you loop until quality criteria are met (Pattern 3) before advancing to the next step.</p>
+
+    <pre>Step 1: Gather requirements
+Step 2: Generate structure
+Step 3: Create files
+Step 4: Validate          ─┐
+Step 5: Refine             │  (iterative loop)
+        └── Re-validate  ──┘
+Step 6: Summarize</pre>
+
+    <p>This is exactly what our <code>project-scaffolder</code> skill does.</p>
+
+    <h3>Validation Gates</h3>
+
+    <p>A validation gate is a checkpoint between workflow steps. The rule is simple: <strong>proceed only if the previous step produced valid output.</strong> But the implementation details matter.</p>
+
+    <p><strong>Specific diagnostics vs. generic failures:</strong></p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Bad (generic)</th>
+          <th>Good (specific)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>&ldquo;Validation failed&rdquo;</td>
+          <td>&ldquo;Missing pyproject.toml in project root&rdquo;</td>
+        </tr>
+        <tr>
+          <td>&ldquo;Error in project structure&rdquo;</td>
+          <td>&ldquo;tests/ directory exists but contains no test files&rdquo;</td>
+        </tr>
+        <tr>
+          <td>&ldquo;Fix the issues and try again&rdquo;</td>
+          <td>&ldquo;src/__init__.py is empty &mdash; add package docstring and version&rdquo;</td>
+        </tr>
+        <tr>
+          <td>&ldquo;Something went wrong&rdquo;</td>
+          <td>&ldquo;Expected &lsquo;python-api&rsquo; or &lsquo;node-api&rsquo; but got &lsquo;ruby-api&rsquo;&rdquo;</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The PDF emphasizes this in Pattern 1&rsquo;s key techniques: validation at each stage should produce actionable output that tells Claude <em>exactly</em> what to fix. This is critical because Claude uses the validation output to decide what to do next. If the output says &ldquo;validation failed,&rdquo; Claude doesn&rsquo;t know what to fix. If it says &ldquo;missing pyproject.toml in project root,&rdquo; Claude knows exactly what to create.</p>
+
+    <p>In Course 3, we built <code>validate_actions.py</code> which checked individual fields and reported specific issues. In this course, we&rsquo;ll build <code>validate_structure.py</code> which checks an entire file tree against a template and reports every discrepancy.</p>
+
+    <h3>Error Handling in Multi-Step Workflows</h3>
+
+    <p>When a workflow spans multiple steps, errors become more complex. You need to handle:</p>
+
+    <ol>
+      <li><strong>Step failure</strong> &mdash; a step can&rsquo;t complete (e.g., validation script not found)</li>
+      <li><strong>Partial output</strong> &mdash; a step produces incomplete results (e.g., some files created but not all)</li>
+      <li><strong>Refinement exhaustion</strong> &mdash; the iterative loop doesn&rsquo;t converge after N attempts</li>
+    </ol>
+
+    <p>For each, your skill should provide specific guidance:</p>
+
+    <pre>### If validation fails:
+1. Read the validation output carefully -- it lists every missing or incorrect item
+2. Fix ONLY the items listed as issues (do not regenerate files that passed)
+3. Re-run validation
+4. If validation fails a second time on the SAME issues, stop and report
+   the persistent problems to the user</pre>
+
+    <p>Notice the three principles at work:</p>
+
+    <ul>
+      <li><strong>Specific</strong>: &ldquo;fix ONLY the items listed&rdquo; not &ldquo;fix the issues&rdquo;</li>
+      <li><strong>Bounded</strong>: &ldquo;if validation fails a second time on the SAME issues, stop&rdquo; prevents infinite loops</li>
+      <li><strong>Transparent</strong>: &ldquo;report the persistent problems to the user&rdquo; keeps the human informed</li>
+    </ul>
+
+    <h3>The <code>allowed-tools</code> Field for Workflow Safety</h3>
+
+    <p>From the skills docs, <code>allowed-tools</code> limits which tools Claude can use when a skill is active. In multi-step workflows, this provides a safety boundary:</p>
+
+    <div class="yaml-block"><span class="yaml-key">allowed-tools:</span> <span class="yaml-value">Bash(python *), Read, Write, Edit, Glob</span></div>
+
+    <p>This means Claude can:</p>
+
+    <ul>
+      <li>Run Python scripts (for validation)</li>
+      <li>Read existing files (for verification)</li>
+      <li>Write and edit files (for scaffolding)</li>
+      <li>Search with Glob (for structure checking)</li>
+    </ul>
+
+    <p>But Claude <em>cannot</em>:</p>
+
+    <ul>
+      <li>Run arbitrary bash commands (no <code>rm -rf</code>, no <code>curl</code>)</li>
+      <li>Use <code>Grep</code> (not needed for scaffolding)</li>
+    </ul>
+
+    <p>For workflow skills that create files, restricting tools prevents Claude from accidentally running destructive commands during the generate-validate-refine loop. This is especially important because the iterative refinement loop means Claude is taking multiple autonomous actions without user confirmation at each step.</p>
+
+    <h3>Problem-First vs. Tool-First Design</h3>
+
+    <p>The PDF (Chapter 5, p.22) introduces an important design distinction:</p>
+
+    <blockquote>
+      <p><strong>Problem-first:</strong> &ldquo;I need to set up a project workspace&rdquo; &mdash; Your skill orchestrates the right calls in the right sequence. Users describe outcomes; the skill handles the tools.</p>
+      <p><strong>Tool-first:</strong> &ldquo;I have Notion MCP connected&rdquo; &mdash; Your skill teaches Claude the optimal workflows and best practices. Users have access; the skill provides expertise.</p>
+      <cite>PDF Guide, Chapter 5</cite>
+    </blockquote>
+
+    <p>Our <code>project-scaffolder</code> is a <em>problem-first</em> skill. Users say &ldquo;scaffold a new project&rdquo; and the skill handles the multi-step orchestration. This framing helps you decide what goes in the skill:</p>
+
+    <ul>
+      <li>Problem-first skills need <strong>explicit steps</strong>, <strong>validation gates</strong>, and <strong>error handling</strong> (because you&rsquo;re orchestrating)</li>
+      <li>Tool-first skills need <strong>best practices</strong>, <strong>examples</strong>, and <strong>domain knowledge</strong> (because you&rsquo;re advising)</li>
+    </ul>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li><strong>PDF Guide Chapter 5</strong> (pp.21&ndash;24): Pattern 1 (Sequential Workflow Orchestration), Pattern 3 (Iterative Refinement), problem-first vs tool-first design</li>
+        <li><strong>Skills docs, &ldquo;Types of skill content&rdquo;</strong>: Reference content vs task content, when to use <code>disable-model-invocation: true</code></li>
+        <li><strong>Skills docs, &ldquo;Restrict tool access&rdquo;</strong>: The <code>allowed-tools</code> field for limiting Claude&rsquo;s tools during skill execution</li>
+      </ul>
+    </div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>A <strong>project-scaffolder</strong> skill that demonstrates both Pattern 1 and Pattern 3 in a single workflow. When invoked, it:</p>
+
+    <ol>
+      <li><strong>Gathers requirements</strong> from the user (project name, template type)</li>
+      <li><strong>Generates the directory structure</strong> based on a template</li>
+      <li><strong>Creates all files</strong> with appropriate starter content</li>
+      <li><strong>Validates the structure</strong> using a Python script that checks every expected file</li>
+      <li><strong>Refines</strong> any issues found by the validator (iterative loop)</li>
+      <li><strong>Summarizes</strong> what was created</li>
+    </ol>
+
+    <div class="callout info">
+      <p>The skill includes:</p>
+      <table class="tool-table">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>SKILL.md</code></td>
+            <td>6-step orchestrated workflow with validation gates and refinement loop</td>
+          </tr>
+          <tr>
+            <td><code>scripts/validate_structure.py</code></td>
+            <td>Deterministic validation &mdash; checks file tree against template expectations</td>
+          </tr>
+          <tr>
+            <td><code>assets/templates/python-api/</code></td>
+            <td>Template files for a Python API project (pyproject.toml, src/, tests/)</td>
+          </tr>
+          <tr>
+            <td><code>assets/templates/node-api/</code></td>
+            <td>Template files for a Node.js API project (package.json, src/, tests/)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>This is more complex than any skill we&rsquo;ve built so far. It combines concepts from every previous course: YAML frontmatter and description formula (Course 1&ndash;2), supporting files with scripts, references, assets (Course 3), validation-driven iteration (Course 4), arguments and tool restrictions (Course 5), and sequential orchestration + iterative refinement (this course).</p>
+    </div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Understand the Skill Structure</span>
+      <div class="step-content">
+        <p>Look at the complete file tree:</p>
+
+        <div class="file-tree">project-scaffolder/
+├── SKILL.md
+├── scripts/
+│   └── validate_structure.py
+└── assets/
+    └── templates/
+        ├── python-api/
+        │   ├── pyproject.toml
+        │   ├── README.md
+        │   ├── src/
+        │   │   └── __init__.py
+        │   └── tests/
+        │       └── test_placeholder.py
+        └── node-api/
+            ├── package.json
+            ├── README.md
+            ├── src/
+            │   └── index.ts
+            └── tests/
+                └── index.test.ts</div>
+
+        <p>Each template directory contains the <em>expected</em> structure for a project. The validation script compares the scaffolded project against the template to verify completeness.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Read the SKILL.md</span>
+      <div class="step-content">
+        <p>Open <code>skill/project-scaffolder/SKILL.md</code> and notice how the workflow is structured:</p>
+
+        <p><strong>Frontmatter:</strong></p>
+
+        <div class="yaml-block"><span class="yaml-delimiter">---</span>
+<span class="yaml-key">name:</span> <span class="yaml-value">project-scaffolder</span>
+<span class="yaml-key">description:</span> <span class="yaml-value">&gt;-</span>
+  <span class="yaml-value">Scaffolds a new project from a template with validation.</span>
+  <span class="yaml-value">Use when the user says "scaffold a project", "create a new project",</span>
+  <span class="yaml-value">"set up a python project", or "initialize a node project".</span>
+  <span class="yaml-value">Supports python-api and node-api templates with full structure validation.</span>
+<span class="yaml-key">disable-model-invocation:</span> <span class="yaml-value">true</span>
+<span class="yaml-key">allowed-tools:</span> <span class="yaml-value">Bash(python *), Read, Write, Edit, Glob</span>
+<span class="yaml-key">argument-hint:</span> <span class="yaml-value">"[project-name] [template: python-api|node-api]"</span>
+<span class="yaml-delimiter">---</span></div>
+
+        <p>Notice:</p>
+
+        <ul>
+          <li><code>disable-model-invocation: true</code> &mdash; this is a task-content skill with side effects (creates files). You don&rsquo;t want Claude deciding to scaffold a project without being asked.</li>
+          <li><code>allowed-tools</code> restricts Claude to file operations and Python scripts. No arbitrary bash.</li>
+          <li><code>argument-hint</code> tells users the expected arguments in autocomplete.</li>
+          <li>The description follows the <code>[What] + [When] + [Capabilities]</code> formula from Course 2.</li>
+        </ul>
+
+        <p><strong>Workflow body</strong> has 6 numbered steps, each with:</p>
+
+        <ul>
+          <li>Clear instructions for what to do</li>
+          <li>Success criteria (what must be true before proceeding)</li>
+          <li>Failure handling (what to do if the step fails)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Read the Validation Script</span>
+      <div class="step-content">
+        <p>Open <code>scripts/validate_structure.py</code>. This is the heart of the validation gate.</p>
+
+        <p>The script takes two arguments:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>python scripts/validate_structure.py &lt;project-directory&gt; &lt;template-name&gt;</div>
+
+        <p>It compares the actual project directory against the expected template structure and reports:</p>
+
+        <ul>
+          <li>Missing files or directories</li>
+          <li>Empty files that should have content</li>
+          <li>Extra files that aren&rsquo;t in the template (as informational warnings, not errors)</li>
+        </ul>
+
+        <p>The output is structured JSON:</p>
+
+        <pre>{
+  "valid": false,
+  "project_dir": "/path/to/my-project",
+  "template": "python-api",
+  "errors": [
+    "MISSING: pyproject.toml",
+    "EMPTY: src/__init__.py (expected content)"
+  ],
+  "warnings": [
+    "EXTRA: .gitignore (not in template, keeping)"
+  ],
+  "summary": "2 errors, 1 warning"
+}</pre>
+
+        <p>This structured output is what makes the refinement loop work. Claude reads the <code>errors</code> array and knows exactly what to fix. Compare this with a generic &ldquo;validation failed&rdquo; message &mdash; Claude would have no idea what to do next.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Examine the Templates</span>
+      <div class="step-content">
+        <p>Look at <code>assets/templates/python-api/pyproject.toml</code>:</p>
+
+        <pre>[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.backends"
+
+[project]
+name = "{{PROJECT_NAME}}"
+version = "0.1.0"
+description = "{{PROJECT_DESCRIPTION}}"
+requires-python = "&gt;=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest&gt;=7.0", "ruff&gt;=0.1.0"]</pre>
+
+        <p>The <code>{{PROJECT_NAME}}</code> and <code>{{PROJECT_DESCRIPTION}}</code> placeholders are replaced by Claude during scaffolding. These aren&rsquo;t processed by a template engine &mdash; they&rsquo;re markers that tell Claude what to substitute. This is a key pattern: <strong>use simple placeholders that Claude can understand and replace</strong>, not complex templating syntax.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Install and Test</span>
+      <div class="step-content">
+        <p>Copy the skill to your personal skills directory:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cp -r skill/project-scaffolder ~/.claude/skills/project-scaffolder</div>
+
+        <p>Start a Claude Code session and test the full workflow:</p>
+
+        <div class="prompt-box-dark">/project-scaffolder my-service python-api</div>
+
+        <p>Watch for the 6-step workflow:</p>
+
+        <ol>
+          <li>Claude reads your arguments and identifies the template</li>
+          <li>Claude reads the template files from the assets directory</li>
+          <li>Claude creates the project directory and all files</li>
+          <li>Claude runs <code>validate_structure.py</code> to check the result</li>
+          <li>If validation finds issues, Claude fixes them and re-validates</li>
+          <li>Claude prints a summary of everything created</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Test the Refinement Loop</span>
+      <div class="step-content">
+        <p>To see the iterative refinement in action, you need to trigger a validation failure. After scaffolding completes, manually break the project:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>rm my-service/pyproject.toml</div>
+
+        <p>Then ask Claude to re-validate:</p>
+
+        <div class="prompt-box-dark">Can you validate the my-service project structure?</div>
+
+        <p>Claude should run the validation script, detect the missing file, and offer to fix it. This demonstrates the draft-validate-fix-re-validate loop from Pattern 3.</p>
+      </div>
+    </div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li><strong>Trace the Dependency Chain</strong>: Read through the SKILL.md and identify every point where one step depends on output from a previous step. Write down each dependency &mdash; Step 2 depends on Step 1 because ___, Step 3 depends on Step 2 because ___, and so on. You should find 4 dependencies, each where a step uses specific output (project name, template choice, file list, validation results) from the preceding step.</li>
+      <li><strong>Add a New Template</strong>: Create a new template at <code>assets/templates/fastapi-app/</code> with these files: <code>pyproject.toml</code> (with fastapi and uvicorn as dependencies), <code>src/main.py</code> (FastAPI app with a health endpoint), <code>src/routes/__init__.py</code> (empty), <code>tests/test_main.py</code> (test for the health endpoint), and <code>README.md</code>. Update <code>validate_structure.py</code> to recognize the new template. Test with <code>/project-scaffolder my-api fastapi-app</code>. The validation script should pass on the first try if Claude used your template correctly.</li>
+      <li><strong>Improve Error Specificity</strong>: Modify <code>validate_structure.py</code> to also check file <em>content</em> for the python-api template. Specifically: <code>pyproject.toml</code> must contain a <code>[project]</code> section, <code>src/__init__.py</code> must define <code>__version__</code>, and <code>tests/test_placeholder.py</code> must import <code>pytest</code>. Run the scaffolder and see if the content validation catches anything. The script should report specific content issues like <code>"CONTENT: src/__init__.py missing __version__ definition"</code>.</li>
+      <li><strong>Build Your Own Sequential Workflow Skill</strong>: Design a skill that uses Pattern 1 for a workflow you actually do. Ideas: a <code>setup-dev-environment</code> skill (install deps &rarr; configure env &rarr; create .env &rarr; verify), a <code>new-api-endpoint</code> skill (create route &rarr; add handler &rarr; add tests &rarr; validate &rarr; register), or a <code>database-migration</code> skill (generate migration &rarr; validate SQL &rarr; run &rarr; verify &rarr; rollback plan). Write just the SKILL.md with the workflow steps, validation gates, and error handling. Check your skill against these criteria: Does every step have a clear success condition? Are dependencies between steps explicit? Does validation produce specific, actionable diagnostics? Is the refinement loop bounded (max iterations)?</li>
+    </ol>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>skill/project-scaffolder/SKILL.md</code> has valid YAML frontmatter with <code>---</code> delimiters</li>
+      <li><code>name</code> field is <code>project-scaffolder</code> (kebab-case, matches folder)</li>
+      <li><code>description</code> follows <code>[What] + [When] + [Capabilities]</code> formula</li>
+      <li><code>disable-model-invocation: true</code> is set (task-content skill with side effects)</li>
+      <li><code>allowed-tools</code> restricts available tools during execution</li>
+      <li><code>argument-hint</code> documents expected arguments</li>
+      <li>SKILL.md has 6 clearly numbered steps with dependencies</li>
+      <li>Each step has a success condition and failure handling</li>
+      <li>The refinement loop (Steps 4&ndash;5) is bounded with a max iteration count</li>
+      <li><code>scripts/validate_structure.py</code> is a functional Python script (not a stub)</li>
+      <li>Running <code>python scripts/validate_structure.py --help</code> prints usage information</li>
+      <li>Validation output is structured JSON with <code>errors</code> and <code>warnings</code> arrays</li>
+      <li>Template files exist in both <code>assets/templates/python-api/</code> and <code>assets/templates/node-api/</code></li>
+      <li>Template files contain <code>{{PROJECT_NAME}}</code> placeholders, not hardcoded values</li>
+      <li>Copying to <code>~/.claude/skills/project-scaffolder/</code> and running <code>/project-scaffolder test-app python-api</code> produces a valid project directory</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> In <a href="course-07-hooks.html">Course 7: Hooks &mdash; Deterministic Control over Claude&rsquo;s Behavior</a>, you&rsquo;ll learn what hooks are: shell commands that run at specific lifecycle points (PreToolUse, PostToolUse, Stop), matchers for filtering by tool name and session type, hook I/O with JSON stdin and exit codes, three hook types (command hooks, prompt hooks, and agent hooks), how to embed hooks in skill frontmatter for skill-scoped automation, and you&rsquo;ll build a <strong>safe-deploy</strong> skill with an embedded hook that validates bash commands before they execute.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-05-advanced-features.html" class="prev">Advanced Features</a>
+      <a href="course-07-hooks.html" class="next">Hooks</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html" class="current">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
