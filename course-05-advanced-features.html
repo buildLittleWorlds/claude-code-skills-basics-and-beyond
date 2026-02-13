@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Features — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 1: Skills Fundamentals</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Advanced Skill Features &mdash; Arguments, Dynamic Context, Subagent Execution</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>5</strong> of 12</span>
+      <span class="meta-pill"><strong>Intermediate</strong></span>
+      <span class="meta-pill">40 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">In Courses 1&ndash;4, every skill you built was static &mdash; the same instructions ran the same way every time. Real workflows need flexibility: a different issue number each time, live data from GitHub, exploration that doesn&rsquo;t clutter your main conversation. This course introduces three features that make skills dynamic and isolated: <strong>arguments</strong> for parameterized input with <code>$ARGUMENTS</code>, <code>$ARGUMENTS[N]</code>, and <code>$N</code> shorthand; <strong>dynamic context injection</strong> with <code>!`command`</code> preprocessing syntax; and <strong>subagent execution</strong> with <code>context: fork</code> and the <code>agent</code> field. You&rsquo;ll also learn to control tools with <code>allowed-tools</code> and use string substitutions like <code>${CLAUDE_SESSION_ID}</code>. You&rsquo;ll build an <strong>investigate-issue</strong> skill that uses a forked Explore agent to research GitHub issues.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Course 1: Your First Skill in Five Minutes</strong> (skill folder basics, YAML frontmatter, naming rules)</li>
+        <li>Completed <strong>Course 2: Crafting Descriptions and Trigger Phrases</strong> (description formula, <code>disable-model-invocation</code>, <code>user-invocable</code>)</li>
+        <li>Completed <strong>Course 3: Full Skill Anatomy</strong> (scripts, references, assets, progressive disclosure L3)</li>
+        <li>Completed <strong>Course 4: Testing, Iteration, and the Feedback Loop</strong> (test plans, iteration signals, performance baselines)</li>
+        <li>You have the <code>daily-standup</code>, <code>code-review-checklist</code>, <code>meeting-to-actions</code>, and <code>pr-description</code> skills installed</li>
+        <li>You have the GitHub CLI (<code>gh</code>) installed and authenticated (for the investigate-issue skill)</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>Moving Beyond Static Skills</h3>
+
+    <p>In Courses 1&ndash;4, every skill you built was static &mdash; the same instructions ran the same way every time. The <code>daily-standup</code> skill always generates Yesterday/Today/Blockers. The <code>pr-description</code> skill always reads git diff. The instructions are fixed at authoring time.</p>
+
+    <p>But real workflows need flexibility:</p>
+
+    <ul>
+      <li>&ldquo;Investigate issue <strong>#42</strong>&rdquo; &mdash; the issue number changes every time</li>
+      <li>&ldquo;Summarize PR <strong>#187</strong>&rdquo; &mdash; the skill needs live data from GitHub, not a hardcoded prompt</li>
+      <li>&ldquo;Research the auth module&rdquo; &mdash; this exploration task shouldn&rsquo;t pollute your main conversation context</li>
+    </ul>
+
+    <p>Course 5 introduces three features that make skills dynamic and isolated: <strong>arguments</strong> for parameterized input, <strong>dynamic context injection</strong> for live data preprocessing, and <strong>subagent execution</strong> for isolated contexts. Together, they transform skills from static recipes into flexible, reusable tools.</p>
+
+    <h3>Passing Arguments with <code>$ARGUMENTS</code></h3>
+
+    <p>Skills can accept arguments when invoked. The skills docs describe three substitution patterns:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Syntax</th>
+          <th>Description</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>$ARGUMENTS</code></td>
+          <td>All arguments as a single string</td>
+          <td><code>/fix-issue 123</code> &rarr; <code>$ARGUMENTS</code> becomes <code>123</code></td>
+        </tr>
+        <tr>
+          <td><code>$ARGUMENTS[N]</code></td>
+          <td>Access argument by 0-based index</td>
+          <td><code>/migrate SearchBar React Vue</code> &rarr; <code>$ARGUMENTS[1]</code> becomes <code>React</code></td>
+        </tr>
+        <tr>
+          <td><code>$N</code></td>
+          <td>Shorthand for <code>$ARGUMENTS[N]</code></td>
+          <td><code>/migrate SearchBar React Vue</code> &rarr; <code>$1</code> becomes <code>React</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Here&rsquo;s the fix-issue example from the skills docs:</p>
+
+    <div class="skill-file"><div class="skill-file-header">fix-issue/SKILL.md</div><pre>---
+name: fix-issue
+description: Fix a GitHub issue
+disable-model-invocation: true
+---
+
+Fix GitHub issue $ARGUMENTS following our coding standards.
+
+1. Read the issue description
+2. Understand the requirements
+3. Implement the fix
+4. Write tests
+5. Create a commit</pre></div>
+
+    <p>When you run <code>/fix-issue 123</code>, Claude receives &ldquo;Fix GitHub issue 123 following our coding standards&hellip;&rdquo;</p>
+
+    <p><strong>Positional arguments</strong> let you pass multiple distinct values. The skills docs show a migration skill:</p>
+
+    <div class="skill-file"><div class="skill-file-header">migrate-component/SKILL.md</div><pre>---
+name: migrate-component
+description: Migrate a component from one framework to another
+---
+
+Migrate the $0 component from $1 to $2.
+Preserve all existing behavior and tests.</pre></div>
+
+    <p>Running <code>/migrate-component SearchBar React Vue</code> replaces <code>$0</code> with <code>SearchBar</code>, <code>$1</code> with <code>React</code>, and <code>$2</code> with <code>Vue</code>.</p>
+
+    <p><strong>Important behavior</strong>: If you invoke a skill with arguments but the skill content doesn&rsquo;t include <code>$ARGUMENTS</code>, Claude Code appends <code>ARGUMENTS: &lt;your input&gt;</code> to the end of the skill content. Claude still sees what you typed &mdash; it&rsquo;s just appended rather than substituted inline.</p>
+
+    <h4>The <code>argument-hint</code> Frontmatter Field</h4>
+
+    <p>The <code>argument-hint</code> field shows users what arguments are expected during autocomplete:</p>
+
+    <div class="yaml-block"><span class="yaml-key">name:</span> <span class="yaml-value">investigate-issue</span>
+<span class="yaml-key">argument-hint:</span> <span class="yaml-value">"[issue-number]"</span></div>
+
+    <p>When a user types <code>/investigate-issue</code> and pauses, the autocomplete shows <code>[issue-number]</code> as a hint. This guides usage without enforcing a specific format.</p>
+
+    <h3>Dynamic Context Injection with <code>!`command`</code></h3>
+
+    <p>The <code>!`command`</code> syntax runs shell commands <strong>before</strong> the skill content is sent to Claude. The command output replaces the placeholder, so Claude receives actual data, not the command itself.</p>
+
+    <p>This is the skills docs example &mdash; a PR summary skill that fetches live data:</p>
+
+    <div class="skill-file"><div class="skill-file-header">pr-summary/SKILL.md</div><pre>---
+name: pr-summary
+description: Summarize changes in a pull request
+context: fork
+agent: Explore
+allowed-tools: Bash(gh *)
+---
+
+## Pull request context
+- PR diff: !`gh pr diff`
+- PR comments: !`gh pr view --comments`
+- Changed files: !`gh pr diff --name-only`
+
+## Your task
+Summarize this pull request...</pre></div>
+
+    <p>When this skill runs:</p>
+
+    <ol>
+      <li>Each <code>!`command`</code> executes immediately (before Claude sees anything)</li>
+      <li>The output replaces the placeholder in the skill content</li>
+      <li>Claude receives the fully-rendered prompt with actual PR data</li>
+    </ol>
+
+    <p><strong>This is preprocessing, not something Claude executes.</strong> Claude only sees the final result. The distinction matters: if you write <code>!`gh issue view 42`</code>, the <code>gh</code> command runs in your terminal and the output gets pasted into the skill prompt. Claude never runs <code>gh issue view 42</code> itself.</p>
+
+    <p>You can combine arguments with dynamic context for powerful parameterized queries:</p>
+
+    <pre>!`gh issue view $0`</pre>
+
+    <p>This runs <code>gh issue view</code> with whatever the user passed as the first argument. If the user types <code>/investigate-issue 42</code>, the command becomes <code>gh issue view 42</code>, runs in your terminal, and the output replaces the entire <code>!`...`</code> placeholder.</p>
+
+    <h3>Running Skills in a Subagent with <code>context: fork</code></h3>
+
+    <p>Adding <code>context: fork</code> to your frontmatter runs the skill in an isolated subagent context. The skill content becomes the prompt that drives the subagent. The subagent does <strong>not</strong> have access to your conversation history.</p>
+
+    <p>From the skills docs:</p>
+
+    <blockquote>
+      <p>&ldquo;<code>context: fork</code> only makes sense for skills with explicit instructions. If your skill contains guidelines like &lsquo;use these API conventions&rsquo; without a task, the subagent receives the guidelines but no actionable prompt, and returns without meaningful output.&rdquo;</p>
+      <cite>Claude Code Skills Docs</cite>
+    </blockquote>
+
+    <p>This is the key insight: <strong>reference content</strong> (Course 2) should run inline. <strong>Task content</strong> with explicit steps benefits from forking when the task is self-contained and you don&rsquo;t want its output consuming your main conversation context.</p>
+
+    <h4>Why Fork?</h4>
+
+    <p>The subagents docs explain the core benefits:</p>
+
+    <ul>
+      <li><strong>Preserve context</strong>: Keep exploration and implementation out of your main conversation</li>
+      <li><strong>Enforce constraints</strong>: Limit which tools a subagent can use</li>
+      <li><strong>Specialize behavior</strong>: Use focused system prompts for specific domains</li>
+      <li><strong>Control costs</strong>: Route tasks to faster, cheaper models like Haiku</li>
+    </ul>
+
+    <p>This is your first taste of a recurring design decision: <strong>should this work happen in the main session (as a skill) or in an isolated context (as a subagent)?</strong> For a full decision framework covering skills, subagents, and agent teams, see <code>courses/references/choosing-the-right-mode.md</code>. For now, the rule of thumb is: fork when the task is self-contained and its intermediate output would clutter your main conversation.</p>
+
+    <p>For the <code>investigate-issue</code> skill, forking makes sense because:</p>
+
+    <ol>
+      <li>Issue investigation involves reading many files, running commands, and generating verbose output &mdash; you don&rsquo;t want all that in your main context</li>
+      <li>The investigation is self-contained: give it an issue number, get back a summary</li>
+      <li>You can restrict tools to read-only operations for safety</li>
+    </ol>
+
+    <h4>The <code>agent</code> Field</h4>
+
+    <p>The <code>agent</code> field specifies which subagent configuration to use:</p>
+
+    <div class="yaml-block"><span class="yaml-key">context:</span> <span class="yaml-value">fork</span>
+<span class="yaml-key">agent:</span> <span class="yaml-value">Explore</span></div>
+
+    <p>Options include built-in agents (<code>Explore</code>, <code>Plan</code>, <code>general-purpose</code>) or any custom subagent from <code>.claude/agents/</code>. If omitted, uses <code>general-purpose</code>.</p>
+
+    <p>From the subagents docs, the built-in agents have different capabilities:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Model</th>
+          <th>Tools</th>
+          <th>Best for</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Explore</strong></td>
+          <td>Haiku (fast)</td>
+          <td>Read-only (no Write/Edit)</td>
+          <td>File discovery, code search, codebase exploration</td>
+        </tr>
+        <tr>
+          <td><strong>Plan</strong></td>
+          <td>Inherits</td>
+          <td>Read-only (no Write/Edit)</td>
+          <td>Codebase research for planning</td>
+        </tr>
+        <tr>
+          <td><strong>general-purpose</strong></td>
+          <td>Inherits</td>
+          <td>All tools</td>
+          <td>Complex research, multi-step operations, code modifications</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>For the <code>investigate-issue</code> skill, we use <code>Explore</code> because investigation is a read-only operation: we&rsquo;re gathering information, not making changes.</p>
+
+    <h4>How <code>context: fork</code> + <code>agent</code> Work Together</h4>
+
+    <p>The skills docs provide a table showing how skills and subagents relate:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Approach</th>
+          <th>System prompt</th>
+          <th>Task</th>
+          <th>Also loads</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Skill with <code>context: fork</code></td>
+          <td>From agent type (<code>Explore</code>, <code>Plan</code>, etc.)</td>
+          <td>SKILL.md content</td>
+          <td>CLAUDE.md</td>
+        </tr>
+        <tr>
+          <td>Subagent with <code>skills</code> field</td>
+          <td>Subagent&rsquo;s markdown body</td>
+          <td>Claude&rsquo;s delegation message</td>
+          <td>Preloaded skills + CLAUDE.md</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>With <code>context: fork</code>, you write the task in your skill and pick an agent type to execute it. The agent&rsquo;s built-in system prompt provides the base behavior, and your SKILL.md content becomes the task it executes.</p>
+
+    <h3>Controlling Tools with <code>allowed-tools</code></h3>
+
+    <p>The <code>allowed-tools</code> field limits which tools Claude can use when a skill is active. From the skills docs:</p>
+
+    <div class="yaml-block"><span class="yaml-key">name:</span> <span class="yaml-value">safe-reader</span>
+<span class="yaml-key">description:</span> <span class="yaml-value">Read files without making changes</span>
+<span class="yaml-key">allowed-tools:</span> <span class="yaml-value">Read, Grep, Glob</span></div>
+
+    <p>For skills that run in a forked context, <code>allowed-tools</code> restricts what the subagent can do. This is important for safety: an investigation skill shouldn&rsquo;t be able to edit files or make commits.</p>
+
+    <p>The <code>allowed-tools</code> field supports parameterized tool access. For example:</p>
+
+    <div class="yaml-block"><span class="yaml-key">allowed-tools:</span> <span class="yaml-value">Bash(gh *), Read, Grep, Glob</span></div>
+
+    <p>This allows the subagent to run any <code>gh</code> command via Bash, plus read, search, and glob operations &mdash; but blocks file writes, edits, and arbitrary Bash commands.</p>
+
+    <h3>String Substitutions</h3>
+
+    <p>Skills support string substitution for dynamic values beyond arguments. From the skills docs:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Variable</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>$ARGUMENTS</code></td>
+          <td>All arguments passed when invoking the skill</td>
+        </tr>
+        <tr>
+          <td><code>$ARGUMENTS[N]</code></td>
+          <td>Access a specific argument by 0-based index</td>
+        </tr>
+        <tr>
+          <td><code>$N</code></td>
+          <td>Shorthand for <code>$ARGUMENTS[N]</code></td>
+        </tr>
+        <tr>
+          <td><code>${CLAUDE_SESSION_ID}</code></td>
+          <td>The current session ID</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The <code>${CLAUDE_SESSION_ID}</code> substitution is useful for logging or creating session-specific files:</p>
+
+    <div class="skill-file"><div class="skill-file-header">session-logger/SKILL.md</div><pre>---
+name: session-logger
+description: Log activity for this session
+---
+
+Log the following to logs/${CLAUDE_SESSION_ID}.log:
+
+$ARGUMENTS</pre></div>
+
+    <h3>Controlling Invocation: The Full Picture</h3>
+
+    <p>Course 2 introduced <code>disable-model-invocation</code> and <code>user-invocable</code>. Now let&rsquo;s see all the invocation controls together, since advanced skills often combine several:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Effect</th>
+          <th>Use case</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>disable-model-invocation: true</code></td>
+          <td>Only user can invoke via <code>/name</code></td>
+          <td>Skills with side effects (deploy, send-message)</td>
+        </tr>
+        <tr>
+          <td><code>user-invocable: false</code></td>
+          <td>Only Claude can invoke</td>
+          <td>Background knowledge (legacy-system-context)</td>
+        </tr>
+        <tr>
+          <td><code>context: fork</code></td>
+          <td>Runs in isolated subagent</td>
+          <td>Self-contained tasks that produce verbose output</td>
+        </tr>
+        <tr>
+          <td><code>allowed-tools</code></td>
+          <td>Restricts available tools</td>
+          <td>Safety constraints (read-only investigation)</td>
+        </tr>
+        <tr>
+          <td><code>agent</code></td>
+          <td>Chooses execution environment</td>
+          <td>Match agent capabilities to the task</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The <code>investigate-issue</code> skill you&rsquo;ll build combines most of these:</p>
+
+    <ul>
+      <li><code>disable-model-invocation: true</code> &mdash; user controls when to investigate</li>
+      <li><code>context: fork</code> &mdash; investigation runs in isolation</li>
+      <li><code>agent: Explore</code> &mdash; uses the fast, read-only Explore agent</li>
+      <li><code>allowed-tools: Bash(gh *), Read, Grep, Glob</code> &mdash; can read files and run <code>gh</code>, but can&rsquo;t edit anything</li>
+    </ul>
+
+    <h3>Permission Rules for Skills</h3>
+
+    <p>The skills docs describe how to control which skills Claude can invoke using permission rules:</p>
+
+    <pre># Allow only specific skills
+Skill(commit)
+Skill(review-pr *)
+
+# Deny specific skills
+Skill(deploy *)</pre>
+
+    <p>Permission syntax: <code>Skill(name)</code> for exact match, <code>Skill(name *)</code> for prefix match with any arguments. This is useful in team settings where you want to limit which skills are available.</p>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li>Skills docs: &ldquo;Pass arguments to skills&rdquo; section &mdash; <code>$ARGUMENTS</code>, <code>$ARGUMENTS[N]</code>, <code>$N</code> shorthand</li>
+        <li>Skills docs: &ldquo;Inject dynamic context&rdquo; section &mdash; <code>!`command`</code> preprocessing syntax</li>
+        <li>Skills docs: &ldquo;Run skills in a subagent&rdquo; section &mdash; <code>context: fork</code>, <code>agent</code> field, capability table</li>
+        <li>Skills docs: &ldquo;Restrict tool access&rdquo; section &mdash; <code>allowed-tools</code> field</li>
+        <li>Skills docs: &ldquo;Available string substitutions&rdquo; section &mdash; <code>${CLAUDE_SESSION_ID}</code></li>
+        <li>Subagents docs: &ldquo;Built-in subagents&rdquo; section &mdash; Explore, Plan, general-purpose agents</li>
+        <li>Skills docs: &ldquo;Restrict Claude&rsquo;s skill access&rdquo; section &mdash; Permission rules for skills</li>
+      </ul>
+    </div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>An <strong>investigate-issue</strong> skill that investigates GitHub issues in a forked Explore agent. This demonstrates Course 5 concepts because:</p>
+
+    <div class="callout info">
+      <ul>
+        <li>It accepts <strong>arguments</strong> (<code>$0</code> for the issue number) &mdash; parameterized invocation</li>
+        <li>It uses <strong>dynamic context injection</strong> (<code>!`gh issue view $0`</code>) &mdash; live GitHub data preprocessing</li>
+        <li>It runs in a <strong>forked subagent</strong> (<code>context: fork</code> + <code>agent: Explore</code>) &mdash; isolated execution</li>
+        <li>It restricts <strong>tools</strong> (<code>allowed-tools: Bash(gh *), Read, Grep, Glob</code>) &mdash; read-only safety</li>
+        <li>It uses <code>disable-model-invocation: true</code> &mdash; user-controlled invocation only</li>
+        <li>It includes a <strong>reference file</strong> with an investigation checklist &mdash; building on Course 3&rsquo;s pattern</li>
+        <li>It uses <code>argument-hint</code> &mdash; guiding users on expected input</li>
+      </ul>
+    </div>
+
+    <p>Here&rsquo;s the file structure:</p>
+
+    <div class="file-tree">investigate-issue/
+├── SKILL.md                              # Investigation workflow with dynamic context
+└── references/
+    └── investigation-checklist.md        # Structured investigation methodology</div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Understand the design decisions</span>
+      <div class="step-content">
+        <p>Each frontmatter field serves a specific purpose:</p>
+
+        <table class="tool-table">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Value</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>name</code></td>
+              <td><code>investigate-issue</code></td>
+              <td>Matches folder name, kebab-case</td>
+            </tr>
+            <tr>
+              <td><code>description</code></td>
+              <td>Investigates GitHub issues&hellip;</td>
+              <td>Follows <code>[What] + [When] + [Capabilities]</code> formula</td>
+            </tr>
+            <tr>
+              <td><code>disable-model-invocation</code></td>
+              <td><code>true</code></td>
+              <td>User controls when to investigate &mdash; Claude shouldn&rsquo;t auto-trigger</td>
+            </tr>
+            <tr>
+              <td><code>context</code></td>
+              <td><code>fork</code></td>
+              <td>Investigation is verbose; keep it out of main conversation</td>
+            </tr>
+            <tr>
+              <td><code>agent</code></td>
+              <td><code>Explore</code></td>
+              <td>Read-only exploration; fast Haiku model for cost efficiency</td>
+            </tr>
+            <tr>
+              <td><code>allowed-tools</code></td>
+              <td><code>Bash(gh *), Read, Grep, Glob</code></td>
+              <td>Can read files and query GitHub, but can&rsquo;t edit anything</td>
+            </tr>
+            <tr>
+              <td><code>argument-hint</code></td>
+              <td><code>[issue-number]</code></td>
+              <td>Shows users what to pass</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Study the dynamic context pattern</span>
+      <div class="step-content">
+        <p>The SKILL.md uses <code>!`gh issue view $0 --json title,body,labels,assignees,comments`</code> to fetch live issue data. When the user runs <code>/investigate-issue 42</code>:</p>
+
+        <ol>
+          <li><code>$0</code> is replaced with <code>42</code></li>
+          <li>The command <code>gh issue view 42 --json title,body,labels,assignees,comments</code> runs in the user&rsquo;s terminal</li>
+          <li>The JSON output replaces the <code>!`...`</code> placeholder</li>
+          <li>Claude (in the forked Explore agent) receives the skill content with the actual issue data embedded</li>
+          <li>Claude follows the investigation steps using that data as context</li>
+        </ol>
+
+        <p>This means Claude never has to run <code>gh issue view</code> itself &mdash; the data is already there. This is faster and more reliable than having Claude discover and run the command.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Study the reference file</span>
+      <div class="step-content">
+        <p>Open <code>courses/course-05-advanced-features/skill/investigate-issue/references/investigation-checklist.md</code>. This contains a structured methodology for investigating issues &mdash; categories of investigation, what to look for, how to organize findings.</p>
+
+        <p>The SKILL.md references it: &ldquo;For a structured investigation approach, consult <code>references/investigation-checklist.md</code>.&rdquo; This keeps the main instructions focused on the workflow while the detailed methodology lives in a separate file (Course 3&rsquo;s progressive disclosure Level 3 pattern).</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Install the skill</span>
+      <div class="step-content">
+        <p>Copy the skill to your personal skills directory:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cp -r courses/course-05-advanced-features/skill/investigate-issue ~/.claude/skills/investigate-issue</div>
+
+        <p>Verify the structure:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>ls -R ~/.claude/skills/investigate-issue/</div>
+
+        <p>You should see:</p>
+
+        <pre>SKILL.md
+references/
+
+references:
+investigation-checklist.md</pre>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Test argument passing</span>
+      <div class="step-content">
+        <p>Open Claude Code in a GitHub repository (or any directory where <code>gh</code> is authenticated).</p>
+
+        <p><strong>Test basic invocation with an argument:</strong></p>
+
+        <div class="prompt-box-dark">/investigate-issue 1</div>
+
+        <p>Replace <code>1</code> with an actual issue number from your repo. Watch for:</p>
+
+        <ol>
+          <li>The skill loads (you can see the skill name in the output header)</li>
+          <li>The issue data appears in the context (from the dynamic <code>!`gh issue view`</code> preprocessing)</li>
+          <li>Claude investigates the issue using the Explore agent&rsquo;s read-only tools</li>
+          <li>A summary is returned to your main conversation</li>
+        </ol>
+
+        <p><strong>Test with a non-existent issue:</strong></p>
+
+        <div class="prompt-box-dark">/investigate-issue 99999</div>
+
+        <p>The <code>gh</code> command will fail or return an error. Watch how the skill handles this &mdash; the preprocessed output will contain the error message, and Claude should report it rather than crashing.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Verify forked context</span>
+      <div class="step-content">
+        <p>After running the investigation, notice:</p>
+
+        <ul>
+          <li>Your main conversation context is clean &mdash; the investigation details (file reads, grep searches) are not in your history</li>
+          <li>You received a summary of findings, not the raw verbose output</li>
+          <li>The investigation used the Explore agent (Haiku model &mdash; fast and cheap)</li>
+        </ul>
+
+        <p>To confirm it ran in a fork, try running the investigation and then asking Claude in your main conversation: &ldquo;What files did you just read?&rdquo; Claude shouldn&rsquo;t know &mdash; the file reads happened in the subagent&rsquo;s isolated context.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Verify tool restrictions</span>
+      <div class="step-content">
+        <p>The skill sets <code>allowed-tools: Bash(gh *), Read, Grep, Glob</code>. This means the subagent:</p>
+
+        <ul>
+          <li><strong>Can</strong>: Read files, search code, run <code>gh</code> commands</li>
+          <li><strong>Cannot</strong>: Edit files, write new files, run arbitrary bash commands</li>
+        </ul>
+
+        <p>The investigation should be purely read-only. If the issue suggests a code fix, the investigation should describe what to fix and where &mdash; but the actual editing happens in your main conversation after you review the findings.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">8</span>
+      <span class="step-title">Test the argument-hint</span>
+      <div class="step-content">
+        <p>Start typing <code>/investigate-issue</code> in Claude Code and pause. The autocomplete should show <code>[issue-number]</code> as a hint, guiding you on what to pass.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">9</span>
+      <span class="step-title">Build a second dynamic skill (guided exercise)</span>
+      <div class="step-content">
+        <p>To solidify the concepts, create a simpler skill that uses arguments and dynamic context. Create <code>~/.claude/skills/pr-review/SKILL.md</code>:</p>
+
+        <div class="skill-file"><div class="skill-file-header">pr-review/SKILL.md</div><pre>---
+name: pr-review
+description: Review a specific pull request by number
+disable-model-invocation: true
+context: fork
+agent: Explore
+allowed-tools: Bash(gh *), Read, Grep, Glob
+argument-hint: "[pr-number]"
+---
+
+# Pull Request Review
+
+## Context
+PR details: !`gh pr view $0 --json title,body,additions,deletions,changedFiles`
+PR diff: !`gh pr diff $0`
+PR review comments: !`gh pr view $0 --comments`
+
+## Task
+Review this pull request thoroughly:
+
+1. **Summary**: What does this PR do? (2-3 sentences)
+2. **Changes**: List the key changes by file
+3. **Concerns**: Flag any potential issues (bugs, security, performance)
+4. **Questions**: What would you ask the author?
+5. **Verdict**: Approve, request changes, or needs discussion</pre></div>
+
+        <p>Test with <code>/pr-review 1</code> (replace with a real PR number). Compare this to the <code>code-review-checklist</code> from Course 2 &mdash; this version is parameterized and isolated.</p>
+      </div>
+    </div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li><strong>Add a second dynamic context command</strong>: Modify the <code>investigate-issue</code> skill to also fetch related PRs with <code>!`gh pr list --search "issue:$0" --json number,title,state`</code>. Test that related PRs appear in the investigation context when they exist.</li>
+      <li><strong>Create a multi-argument skill</strong>: Build a <code>compare-branches</code> skill at <code>~/.claude/skills/compare-branches/SKILL.md</code> that takes two branch names. Use <code>$0</code> and <code>$1</code> for the base and compare branches, with <code>argument-hint: "[base-branch] [compare-branch]"</code>. Add dynamic context with <code>!`git diff --stat $0...$1`</code> and <code>!`git log --oneline $0...$1`</code>. Test with <code>/compare-branches main feature-branch</code>.</li>
+      <li><strong>Test <code>context: fork</code> vs inline</strong>: Take the <code>investigate-issue</code> skill and create a copy without <code>context: fork</code> (remove the <code>context</code> and <code>agent</code> fields). Run both versions against the same issue. Compare: How does your main conversation context differ? Which produces a more focused result? This demonstrates why forking matters for verbose, exploratory tasks.</li>
+      <li><strong>Experiment with different agents</strong>: Change the <code>agent</code> field from <code>Explore</code> to <code>general-purpose</code>. Run the investigation again. Note the differences: <code>general-purpose</code> inherits your current model (likely Opus or Sonnet &mdash; more capable but slower and more expensive) and has access to all tools including Write and Edit. Which agent is more appropriate for read-only investigation?</li>
+      <li><strong>Build a <code>session-logger</code> skill</strong>: Create a skill that uses <code>${CLAUDE_SESSION_ID}</code> to log notable findings to a session-specific file at <code>session-logs/${CLAUDE_SESSION_ID}.md</code>. Set <code>disable-model-invocation: true</code> and use <code>$ARGUMENTS</code> for the log entry content. Test with <code>/session-logger Found race condition in auth middleware</code>. Verify the log file is created with the session ID in the filename.</li>
+      <li><strong>Permission rules experiment</strong>: Add a deny rule for the investigate-issue skill in your permissions (via <code>/permissions</code>): <code>Skill(investigate-issue *)</code>. Verify that Claude can no longer invoke it even if you ask explicitly. Remove the rule when done. This demonstrates how teams can control skill access.</li>
+    </ol>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>~/.claude/skills/investigate-issue/SKILL.md</code> exists with correct casing</li>
+      <li><code>~/.claude/skills/investigate-issue/references/investigation-checklist.md</code> exists</li>
+      <li>YAML frontmatter has valid <code>---</code> delimiters</li>
+      <li><code>name</code> field is <code>investigate-issue</code> (kebab-case, matches folder)</li>
+      <li><code>description</code> follows <code>[What] + [When] + [Capabilities]</code> formula</li>
+      <li>No XML angle brackets in frontmatter</li>
+      <li><code>context: fork</code> is set in frontmatter</li>
+      <li><code>agent: Explore</code> is set in frontmatter</li>
+      <li><code>allowed-tools</code> restricts to read-only + <code>gh</code> commands</li>
+      <li><code>disable-model-invocation: true</code> prevents automatic triggering</li>
+      <li><code>argument-hint: "[issue-number]"</code> is set</li>
+      <li>SKILL.md is under 500 lines</li>
+      <li>SKILL.md references the investigation checklist with clear &ldquo;when to consult&rdquo; instructions</li>
+      <li>Running <code>/investigate-issue &lt;number&gt;</code> invokes the skill with the issue data</li>
+      <li>Dynamic context (<code>!`gh issue view $0`</code>) preprocesses actual GitHub data</li>
+      <li>The skill runs in a forked Explore agent (main conversation context stays clean)</li>
+      <li>Tool restrictions prevent file editing within the investigation</li>
+      <li>Invalid issue numbers are handled gracefully (error message, not crash)</li>
+      <li>The investigation returns a structured summary to the main conversation</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> In <a href="course-06-multi-step-workflows.html">Course 6: Multi-Step Workflows with Error Handling</a>, you&rsquo;ll learn sequential workflow orchestration (the PDF&rsquo;s Pattern 1) with explicit step ordering and dependencies, iterative refinement (the PDF&rsquo;s Pattern 3) with draft-validate-fix-re-validate loops, validation gates that proceed only if the previous step succeeded, robust error handling with specific diagnostics, using <code>allowed-tools</code> for safety in automated workflows, and you&rsquo;ll build a <strong>project-scaffolder</strong> skill with validation scripts and multiple project templates.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-04-testing-iteration.html" class="prev">Testing &amp; Iteration</a>
+      <a href="course-06-multi-step-workflows.html" class="next">Multi-Step Workflows</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html" class="current">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
