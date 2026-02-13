@@ -1,0 +1,889 @@
+/*
+  Claude Code Skills: Basics and Beyond
+  Companion Site Stylesheet
+
+  Based on the Gems: Building an Intellectual Map stylesheet.
+  Ink, cream, and sepia tones for a bookish, academic feel.
+  Extended with terminal, YAML, and skill-file components.
+*/
+
+/* CSS Variables */
+:root {
+  --deep-ink: #2C3E50;
+  --ink-medium: #4A6785;
+  --warm-cream: #F5F0E6;
+  --aged-paper: #EDE4D3;
+  --sepia-brown: #8B5A2B;
+  --near-black: #333333;
+  --muted-teal: #17A2B8;
+  --info-bg: #D1ECF1;
+  --warning-bg: #FFF3CD;
+  --warning-border: #D4A574;
+  --success-bg: #D4EDDA;
+  --success-border: #28A745;
+}
+
+/* Reset and base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'EB Garamond', Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--near-black);
+  background: #FDFBF7;
+  min-height: 100vh;
+}
+
+/* Container */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2em;
+}
+
+/* Header */
+header {
+  background: var(--deep-ink);
+  color: var(--warm-cream);
+  padding: 1.5em 2em;
+  border-bottom: 4px solid var(--sepia-brown);
+  margin-bottom: 2em;
+}
+
+header .container {
+  padding: 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+header .site-label {
+  font-size: 0.9em;
+  opacity: 0.9;
+  margin-bottom: 0.25em;
+}
+
+header h1 {
+  font-size: 2em;
+  font-weight: normal;
+  margin: 0;
+}
+
+header h1 a {
+  color: var(--warm-cream);
+  text-decoration: none;
+}
+
+header h1 a:hover {
+  opacity: 0.9;
+}
+
+/* Navigation in header */
+header nav {
+  margin-top: 1em;
+  padding-top: 1em;
+  border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+header nav a {
+  color: var(--warm-cream);
+  text-decoration: none;
+  margin-right: 1.5em;
+  font-size: 0.95em;
+  opacity: 0.9;
+}
+
+header nav a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+header nav a.current {
+  opacity: 1;
+  font-weight: 600;
+}
+
+header nav .phase-label {
+  font-size: 0.85em;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* Slogan Banner */
+.slogan-banner {
+  background: var(--aged-paper);
+  border-left: 4px solid var(--sepia-brown);
+  padding: 1.25em 1.5em;
+  margin-bottom: 2em;
+  font-size: 1.1em;
+  font-style: italic;
+  color: var(--deep-ink);
+}
+
+.slogan-banner .main-slogan {
+  font-weight: 600;
+  font-style: normal;
+  display: block;
+  margin-bottom: 0.5em;
+}
+
+.slogan-banner .subtext {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+/* Links */
+a {
+  color: var(--muted-teal);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Main content */
+main {
+  padding-bottom: 2em;
+}
+
+/* Page title */
+.page-title {
+  color: var(--deep-ink);
+  font-size: 1.75em;
+  font-weight: normal;
+  border-bottom: 2px solid var(--sepia-brown);
+  padding-bottom: 0.3em;
+  margin-bottom: 1.5em;
+}
+
+/* Lead paragraph */
+.lead {
+  font-size: 1.15em;
+  color: var(--ink-medium);
+  margin-bottom: 1.5em;
+}
+
+/* Section headings */
+h2 {
+  font-size: 1.4em;
+  color: var(--deep-ink);
+  margin-top: 2em;
+  margin-bottom: 0.8em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--aged-paper);
+}
+
+h3 {
+  font-size: 1.15em;
+  color: var(--ink-medium);
+  margin-top: 1.5em;
+  margin-bottom: 0.6em;
+}
+
+/* Paragraphs */
+p {
+  margin-bottom: 1.2em;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 1.5em;
+  margin-bottom: 1.2em;
+}
+
+li {
+  margin-bottom: 0.5em;
+}
+
+/* Step cards - numbered instruction items */
+.step-card {
+  background: var(--warm-cream);
+  border: 1px solid #D4C5B0;
+  border-radius: 8px;
+  padding: 1.5em;
+  margin-bottom: 1.5em;
+}
+
+.step-card .step-number {
+  display: inline-block;
+  background: var(--deep-ink);
+  color: var(--warm-cream);
+  width: 2em;
+  height: 2em;
+  line-height: 2em;
+  text-align: center;
+  border-radius: 50%;
+  margin-right: 0.75em;
+  font-size: 0.9em;
+}
+
+.step-card .step-title {
+  font-size: 1.15em;
+  font-weight: 600;
+  color: var(--deep-ink);
+}
+
+.step-card .step-content {
+  margin-top: 1em;
+  padding-top: 1em;
+  border-top: 1px solid #D4C5B0;
+}
+
+.step-card .step-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Callout boxes */
+.callout {
+  margin: 1.5em 0;
+  padding: 1em 1.5em;
+  border-radius: 0 8px 8px 0;
+}
+
+.callout p:last-child {
+  margin-bottom: 0;
+}
+
+.callout.info {
+  background: var(--info-bg);
+  border-left: 4px solid var(--muted-teal);
+}
+
+.callout.warning {
+  background: var(--warning-bg);
+  border-left: 4px solid var(--warning-border);
+}
+
+.callout.success {
+  background: var(--success-bg);
+  border-left: 4px solid var(--success-border);
+}
+
+.callout.insight {
+  background: var(--aged-paper);
+  border-left: 4px solid var(--sepia-brown);
+}
+
+.callout.terminal {
+  background: #E8EDF1;
+  border-left: 4px solid var(--deep-ink);
+}
+
+/* Blockquotes */
+blockquote {
+  margin: 1.5em 0;
+  padding: 1em 1.5em;
+  background: var(--aged-paper);
+  border-left: 3px solid var(--sepia-brown);
+  font-style: italic;
+}
+
+blockquote cite {
+  display: block;
+  margin-top: 0.75em;
+  font-style: normal;
+  font-size: 0.85em;
+  color: #555;
+}
+
+/* Code blocks - for prompts and templates */
+pre, .prompt-box {
+  background: var(--warm-cream);
+  border: 1px solid #D4C5B0;
+  border-radius: 6px;
+  padding: 1em 1.25em;
+  margin: 1em 0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.9em;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+code {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.9em;
+  background: var(--aged-paper);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+}
+
+/* Dark prompt box */
+.prompt-box-dark {
+  background: #1E1E1E;
+  color: #D4D4D4;
+  border: none;
+  border-radius: 8px;
+  padding: 1.5em;
+  margin: 1.5em 0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.9em;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* Copy button for code blocks */
+.copy-wrapper {
+  position: relative;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  background: var(--deep-ink);
+  color: var(--warm-cream);
+  border: none;
+  padding: 0.4em 0.8em;
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.copy-wrapper:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  background: var(--ink-medium);
+}
+
+/* Decision tree / tool chooser */
+.decision-box {
+  background: var(--warm-cream);
+  border: 2px solid var(--ink-medium);
+  border-radius: 8px;
+  padding: 1.5em;
+  margin: 1.5em 0;
+}
+
+.decision-box h3 {
+  margin-top: 0;
+  color: var(--deep-ink);
+}
+
+.decision-box ul {
+  margin-bottom: 0;
+}
+
+/* Tool comparison table */
+.tool-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+}
+
+.tool-table th,
+.tool-table td {
+  padding: 0.75em 1em;
+  text-align: left;
+  border-bottom: 1px solid var(--aged-paper);
+}
+
+.tool-table th {
+  background: var(--deep-ink);
+  color: var(--warm-cream);
+  font-weight: 600;
+}
+
+.tool-table tr:nth-child(even) {
+  background: var(--warm-cream);
+}
+
+/* Checklist */
+.checklist {
+  list-style: none;
+  margin-left: 0;
+}
+
+.checklist li {
+  padding-left: 1.75em;
+  position: relative;
+  margin-bottom: 0.75em;
+}
+
+.checklist li::before {
+  content: "\2610";
+  position: absolute;
+  left: 0;
+  color: var(--ink-medium);
+}
+
+/* Post excerpt */
+.post-excerpt {
+  background: #fff;
+  border: 1px solid var(--aged-paper);
+  border-radius: 8px;
+  padding: 1.5em;
+  margin: 1.5em 0;
+}
+
+.post-excerpt .excerpt-meta {
+  font-size: 0.85em;
+  color: var(--ink-medium);
+  margin-bottom: 1em;
+  padding-bottom: 0.75em;
+  border-bottom: 1px solid var(--aged-paper);
+}
+
+.post-excerpt .excerpt-meta strong {
+  color: var(--deep-ink);
+}
+
+/* Glossary terms */
+.glossary-term {
+  margin-bottom: 1.5em;
+  padding-bottom: 1.5em;
+  border-bottom: 1px solid var(--aged-paper);
+}
+
+.glossary-term:last-child {
+  border-bottom: none;
+}
+
+.glossary-term dt {
+  font-weight: 600;
+  color: var(--deep-ink);
+  font-size: 1.1em;
+  margin-bottom: 0.3em;
+}
+
+.glossary-term dd {
+  color: var(--near-black);
+}
+
+/* Side-by-side cards */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5em;
+  margin: 1.5em 0;
+}
+
+.card {
+  background: var(--warm-cream);
+  border: 1px solid #D4C5B0;
+  padding: 1.25em;
+  border-radius: 8px;
+}
+
+.card h3 {
+  margin: 0 0 0.75em 0;
+  color: var(--deep-ink);
+}
+
+.card ul {
+  margin: 0;
+  padding-left: 1.25em;
+  line-height: 1.8;
+}
+
+.card p:last-child {
+  margin-bottom: 0;
+}
+
+/* Course card metadata (level + time) */
+.course-card-meta {
+  font-size: 0.85em;
+  color: var(--ink-medium);
+  margin-bottom: 0.5em;
+}
+
+/* Prompt samples */
+.prompt-sample {
+  background: var(--warm-cream);
+  border: 1px solid #D4C5B0;
+  padding: 1.25em;
+  border-radius: 8px;
+  margin: 1.5em 0;
+}
+
+.prompt-sample p {
+  font-style: italic;
+  color: #555;
+}
+
+.prompt-sample p:last-child {
+  margin-bottom: 0;
+}
+
+/* Test prompt boxes */
+.test-prompt {
+  background: var(--warm-cream);
+  border: 1px solid #EDE4D3;
+  padding: 0.75em 1.5em;
+  margin: 0.75em 0;
+  border-radius: 4px;
+}
+
+.test-prompt p {
+  margin: 0;
+}
+
+/* Divider */
+.divider {
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--sepia-brown), transparent);
+  margin: 2em 0;
+}
+
+/* Page navigation */
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3em;
+  padding-top: 2em;
+  border-top: 2px solid var(--aged-paper);
+}
+
+.page-nav a {
+  display: inline-block;
+  background: var(--warm-cream);
+  color: var(--deep-ink);
+  padding: 0.75em 1.25em;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.95em;
+  border: 1px solid #D4C5B0;
+  transition: background 0.2s;
+}
+
+.page-nav a:hover {
+  background: var(--aged-paper);
+  text-decoration: none;
+}
+
+.page-nav .prev::before {
+  content: "\2190 ";
+}
+
+.page-nav .next::after {
+  content: " \2192";
+}
+
+/* Bottom site navigation */
+.site-nav-bottom {
+  margin-top: 3em;
+  padding-top: 2em;
+  border-top: 1px solid var(--aged-paper);
+}
+
+.site-nav-bottom h3 {
+  color: var(--ink-medium);
+  font-size: 1em;
+  margin-bottom: 1em;
+  font-weight: normal;
+}
+
+.site-nav-bottom ul {
+  list-style: none;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75em;
+}
+
+.site-nav-bottom a {
+  display: inline-block;
+  background: var(--warm-cream);
+  color: var(--deep-ink);
+  padding: 0.5em 1em;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9em;
+  border: 1px solid #D4C5B0;
+}
+
+.site-nav-bottom a:hover {
+  background: var(--aged-paper);
+}
+
+.site-nav-bottom a.current {
+  background: var(--deep-ink);
+  color: var(--warm-cream);
+  border-color: var(--deep-ink);
+}
+
+/* Phase labels in bottom navigation */
+.nav-phase-label {
+  width: 100%;
+  font-variant: small-caps;
+  color: var(--sepia-brown);
+  font-size: 0.85em;
+  letter-spacing: 0.05em;
+  padding-top: 0.75em;
+  margin-top: 0.25em;
+  border-top: 1px solid var(--aged-paper);
+}
+
+.nav-phase-label:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* Footer */
+footer {
+  margin-top: 3em;
+  padding: 1.5em 2em;
+  background: var(--aged-paper);
+  text-align: center;
+  color: var(--ink-medium);
+  font-size: 0.9em;
+}
+
+footer a {
+  color: var(--muted-teal);
+}
+
+/* ============================================
+   NEW COMPONENTS: Skills-specific
+   ============================================ */
+
+/* Course metadata bar */
+.course-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75em;
+  margin-bottom: 2em;
+}
+
+.course-meta .meta-pill {
+  display: inline-block;
+  background: var(--warm-cream);
+  border: 1px solid #D4C5B0;
+  padding: 0.3em 0.9em;
+  border-radius: 20px;
+  font-size: 0.85em;
+  color: var(--deep-ink);
+}
+
+.course-meta .meta-pill strong {
+  color: var(--sepia-brown);
+}
+
+/* Terminal block - bash commands */
+.terminal-block {
+  position: relative;
+  background: #1a1a2e;
+  color: #E0E0E0;
+  border: none;
+  border-radius: 8px;
+  padding: 1.5em;
+  padding-top: 2.5em;
+  margin: 1.5em 0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.85em;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.terminal-block::before {
+  content: "terminal";
+  position: absolute;
+  top: 0.5em;
+  right: 0.75em;
+  font-size: 0.75em;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.terminal-block code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Terminal prompt styling */
+.terminal-block .prompt {
+  color: #6ECB63;
+  user-select: none;
+}
+
+.terminal-block .comment {
+  color: #666;
+}
+
+/* YAML block - frontmatter displays */
+.yaml-block {
+  position: relative;
+  background: #FDF8F0;
+  border: 1px solid var(--sepia-brown);
+  border-radius: 8px;
+  padding: 1.5em;
+  padding-top: 2.5em;
+  margin: 1.5em 0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.85em;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.yaml-block::before {
+  content: "yaml frontmatter";
+  position: absolute;
+  top: 0.5em;
+  right: 0.75em;
+  font-size: 0.75em;
+  color: var(--sepia-brown);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.yaml-block code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* YAML syntax highlighting */
+.yaml-block .yaml-key {
+  color: #8B5A2B;
+  font-weight: 600;
+}
+
+.yaml-block .yaml-value {
+  color: #2C3E50;
+}
+
+.yaml-block .yaml-comment {
+  color: #999;
+}
+
+.yaml-block .yaml-delimiter {
+  color: #888;
+}
+
+/* File tree - directory structure */
+.file-tree {
+  background: #F9F7F3;
+  border: 1px solid #D4C5B0;
+  border-radius: 8px;
+  padding: 1.25em 1.5em;
+  margin: 1.5em 0;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.85em;
+  line-height: 1.8;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--deep-ink);
+}
+
+.file-tree code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Skill file display - full SKILL.md content */
+.skill-file {
+  border: 2px solid var(--deep-ink);
+  border-radius: 8px;
+  margin: 1.5em 0;
+  overflow: hidden;
+}
+
+.skill-file .skill-file-header {
+  background: var(--deep-ink);
+  color: var(--warm-cream);
+  padding: 0.5em 1em;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.8em;
+}
+
+.skill-file pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: #FAFAF5;
+  padding: 1.25em;
+  font-size: 0.85em;
+  line-height: 1.7;
+}
+
+.skill-file code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 600px) {
+  body {
+    font-size: 16px;
+  }
+
+  .container {
+    padding: 1.5em;
+  }
+
+  header {
+    padding: 1em 1.5em;
+  }
+
+  header h1 {
+    font-size: 1.5em;
+  }
+
+  .page-nav {
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  .page-nav a {
+    width: 100%;
+    text-align: center;
+  }
+
+  .tool-table {
+    font-size: 0.9em;
+  }
+
+  .tool-table th,
+  .tool-table td {
+    padding: 0.5em;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .course-meta {
+    gap: 0.5em;
+  }
+
+  .terminal-block,
+  .yaml-block {
+    font-size: 0.8em;
+    padding: 1.25em;
+    padding-top: 2.25em;
+  }
+
+  .site-nav-bottom ul {
+    gap: 0.5em;
+  }
+
+  .site-nav-bottom a {
+    font-size: 0.8em;
+    padding: 0.4em 0.75em;
+  }
+}

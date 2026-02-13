@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curriculum Overview — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html" class="current">Curriculum</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Curriculum Overview</h1>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">This site is a reading companion for the Claude Code Skills curriculum &mdash; twelve lessons that teach you to build skills, hooks, custom subagents, agent teams, and automated workflows. Each page transforms a <code>lesson.md</code> source file into a browsable reference with syntax-highlighted code blocks, step-by-step walkthroughs, and copy-ready terminal commands. Follow the sequence from Course 1 through the Capstone, or jump directly to the topic you need.</p>
+
+    <!-- HOW IT WORKS -->
+    <h2>How It Works</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>Read &amp; Build</h3>
+        <p>Each course page pairs concept explanations with a hands-on project. You read the page, then build the skill (or hook, or agent) yourself in Claude Code.</p>
+      </div>
+      <div class="card">
+        <h3>Copy-Ready Code</h3>
+        <p>Terminal commands, YAML frontmatter, and full SKILL.md files are syntax-highlighted and copyable. Hover over any code block to reveal the copy button.</p>
+      </div>
+      <div class="card">
+        <h3>Progressive Difficulty</h3>
+        <p>Courses progress from beginner (a single SKILL.md file) through intermediate (hooks, testing, workflows) to advanced (subagents, agent teams, a full plugin).</p>
+      </div>
+      <div class="card">
+        <h3>Two Phases</h3>
+        <p><strong>Phase 1</strong> covers skills fundamentals in a single terminal. <strong>Phase 2</strong> adds tmux, subagents, and multi-agent orchestration. A bridge course connects them.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PHASE 1: SKILLS FUNDAMENTALS -->
+    <h2>Phase 1: Skills Fundamentals</h2>
+
+    <p>Seven courses that take you from your first SKILL.md file to hook-powered automation &mdash; all within a single Claude Code session. No tmux required.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3><a href="course-01-first-skill.html">1. Your First Skill</a></h3>
+        <p class="course-card-meta">Beginner &middot; 15 min</p>
+        <p>Build a <strong>daily-standup</strong> skill. Learn what skills are, where they live, YAML frontmatter, and naming rules.</p>
+      </div>
+      <div class="card">
+        <h3><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></h3>
+        <p class="course-card-meta">Beginner &middot; 25 min</p>
+        <p>Build a <strong>code-review-checklist</strong> skill. Master the description formula, trigger phrases, and progressive disclosure.</p>
+      </div>
+      <div class="card">
+        <h3><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></h3>
+        <p class="course-card-meta">Beginner-Intermediate &middot; 35 min</p>
+        <p>Build a <strong>meeting-to-actions</strong> skill with scripts, references, and assets. Learn the complete folder structure.</p>
+      </div>
+      <div class="card">
+        <h3><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 40 min</p>
+        <p>Build a <strong>pr-description</strong> skill with a structured test plan. Learn triggering tests, functional tests, and iteration signals.</p>
+      </div>
+      <div class="card">
+        <h3><a href="course-05-advanced-features.html">5. Advanced Features</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 45 min</p>
+        <p>Build an <strong>investigate-issue</strong> skill. Learn <code>$ARGUMENTS</code>, dynamic context injection, and subagent execution.</p>
+      </div>
+      <div class="card">
+        <h3><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 45 min</p>
+        <p>Build a <strong>project-scaffolder</strong> skill. Learn sequential workflows, validation gates, and error handling patterns.</p>
+      </div>
+      <div class="card">
+        <h3><a href="course-07-hooks.html">7. Hooks</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 35 min</p>
+        <p>Build hook scripts and a <strong>safe-deploy</strong> skill. Learn deterministic control: PreToolUse, PostToolUse, command and prompt hooks.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- BRIDGE -->
+    <h2>Bridge: Terminal Workspace</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3><a href="course-07h-terminal-workspace.html">7&frac12;. Your Terminal Workspace</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 20 min</p>
+        <p>A prerequisite checkpoint for the advanced courses. Verifies you can split panes, manage detached sessions, and use <code>send-keys</code> and <code>capture-pane</code> in tmux.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PHASE 2: INTEGRATED ADVANCED -->
+    <h2>Phase 2: Integrated Advanced</h2>
+
+    <p>Four courses that merge skills with tmux orchestration &mdash; subagents running in separate contexts, CLI tool wrappers, agent teams working in parallel, and a capstone plugin that ties everything together.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3><a href="course-08-custom-subagents.html">8. Custom Subagents</a></h3>
+        <p class="course-card-meta">Advanced &middot; 50 min</p>
+        <p>Build a <strong>test-runner</strong> and <strong>security-reviewer</strong> agent. Learn subagent config, tool restrictions, model selection, and tmux monitoring.</p>
+      </div>
+      <div class="card">
+        <h3><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></h3>
+        <p class="course-card-meta">Advanced &middot; 50 min</p>
+        <p>Build a <strong>github-release-notes</strong> skill and a <strong>dx-review</strong> wrapper script. Learn to combine skills with <code>gh</code>, <code>git</code>, and shell scripting.</p>
+      </div>
+      <div class="card">
+        <h3><a href="course-10-agent-teams.html">10. Agent Teams</a></h3>
+        <p class="course-card-meta">Advanced &middot; 60 min</p>
+        <p>Orchestrate parallel agents with shared task lists, mailbox messaging, and a tmux monitoring dashboard. Build a multi-reviewer code review team.</p>
+      </div>
+      <div class="card">
+        <h3><a href="course-11-capstone.html">11. The Capstone</a></h3>
+        <p class="course-card-meta">Advanced &middot; 75 min</p>
+        <p>Build a complete <strong>engineering-workflow</strong> plugin: four composable skills, two agents, hooks, and a tmux session script that orchestrates the full pipeline.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- GETTING STARTED -->
+    <h2>Getting Started</h2>
+
+    <p>All you need is <a href="https://docs.anthropic.com/en/docs/claude-code/overview">Claude Code</a> installed and a terminal. Start with <a href="course-01-first-skill.html">Course 1: Your First Skill</a> &mdash; you'll have a working skill in under fifteen minutes.</p>
+
+    <div class="callout info">
+      <p><strong>Source files:</strong> The lesson source files and all runnable skill code live in the <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub repository</a>. Each course directory under <code>courses/</code> contains a <code>lesson.md</code> and a <code>skill/</code> folder you can install directly.</p>
+    </div>
+
+    <div class="callout success">
+      <p><strong>Ready?</strong> <a href="course-01-first-skill.html">Start Course 1: Your First Skill &rarr;</a></p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <span></span>
+      <a href="course-01-first-skill.html" class="next">Your First Skill</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

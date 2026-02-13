@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>[COURSE TITLE] — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">[PHASE LABEL]</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">[COURSE TITLE]</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>[N]</strong> of 12</span>
+      <span class="meta-pill"><strong>[LEVEL]</strong></span>
+      <span class="meta-pill">[TIME]</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">[LEAD PARAGRAPH]</p>
+
+    <!--
+    ============================================================
+    MAIN CONTENT — Transform from lesson.md using these mappings:
+
+    ## Prerequisites
+      → <div class="callout info"><p><strong>Prerequisites:</strong></p><ul>...</ul></div>
+
+    ## Concepts / ### Sub-concept
+      → <h2> / <h3> + paragraphs, tables, code blocks
+
+    Code blocks (```yaml)
+      → <div class="yaml-block">...</div>
+      → OR <div class="skill-file"><div class="skill-file-header">path/SKILL.md</div><pre>...</pre></div>
+
+    Code blocks (```bash)
+      → <div class="terminal-block">...</div>  (for commands)
+      → OR <pre>...</pre>  (for output)
+
+    Code blocks (```plain with tree structure)
+      → <div class="file-tree">...</div>
+
+    Markdown tables
+      → <table class="tool-table"><thead>...</thead><tbody>...</tbody></table>
+
+    Blockquotes (PDF citations)
+      → <blockquote><p>...</p><cite>...</cite></blockquote>
+
+    ## Key References
+      → <div class="callout insight"><p><strong>Key References:</strong></p>...</div>
+
+    ## What You're Building
+      → <p>...</p> + <div class="callout info">...</div>
+
+    ## Walkthrough / ### Step N
+      → <div class="step-card">
+           <span class="step-number">N</span>
+           <span class="step-title">Step title</span>
+           <div class="step-content">...</div>
+         </div>
+
+    Walkthrough bash commands
+      → <div class="terminal-block">...</div> inside step cards
+
+    ## Exercises
+      → <h2>Exercises</h2><ol><li>...</li></ol>
+
+    ## Verification Checklist
+      → <h2>Verification Checklist</h2><ul class="checklist"><li>...</li></ul>
+
+    ## What's Next
+      → <div class="callout success"><p><strong>What's Next:</strong> ...</p></div>
+    ============================================================
+    -->
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="[PREV].html" class="prev">[PREV TITLE]</a>
+      <a href="[NEXT].html" class="next">[NEXT TITLE]</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
