@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descriptions &amp; Triggers — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 1: Skills Fundamentals</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Crafting Descriptions and Trigger Phrases</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>2</strong> of 12</span>
+      <span class="meta-pill"><strong>Beginner</strong></span>
+      <span class="meta-pill">25 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">Your skill&rsquo;s description is the only thing Claude sees before deciding to load it. This course teaches you the description formula, how to write trigger phrases that match natural user language, and the difference between reference and task content. You&rsquo;ll build a <strong>code-review-checklist</strong> skill with a rich, multi-trigger description and structured review instructions.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Course 1: Your First Skill in Five Minutes</strong></li>
+        <li>You have the <code>daily-standup</code> skill installed at <code>~/.claude/skills/daily-standup/SKILL.md</code></li>
+        <li>You understand the basics: YAML frontmatter, skill folder structure, kebab-case naming</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>The Description Field: Your Skill&rsquo;s First Impression</h3>
+
+    <p>In Course 1, you learned that the description sits in the YAML frontmatter and that Claude uses it to decide when to load a skill. Now let&rsquo;s understand <em>why</em> it matters so much.</p>
+
+    <blockquote>
+      <p>&ldquo;This metadata&hellip;provides just enough information for Claude to know when each skill should be used without loading all of it into context.&rdquo; This is the first level of progressive disclosure.</p>
+      <cite>Claude Code Skills Guide</cite>
+    </blockquote>
+
+    <p>The description is the <strong>only</strong> thing Claude sees about your skill until it decides to load the full body. Every skill you install adds its description to Claude&rsquo;s system prompt. If you have 20 skills, Claude reads 20 descriptions at the start of every conversation. That&rsquo;s why the description must be:</p>
+
+    <ol>
+      <li><strong>Precise enough</strong> to trigger on the right queries</li>
+      <li><strong>Specific enough</strong> to avoid triggering on unrelated queries</li>
+      <li><strong>Concise enough</strong> to not waste token budget</li>
+    </ol>
+
+    <p>The skills docs confirm there&rsquo;s a character budget: descriptions are loaded into context at 2% of the context window, with a fallback of 16,000 characters. If you have too many skills with bloated descriptions, some get excluded entirely. You can check for this by running <code>/context</code> in Claude Code.</p>
+
+    <h3>The Description Formula</h3>
+
+    <p>The PDF guide provides a specific structure for effective descriptions:</p>
+
+    <pre>[What it does] + [When to use it] + [Key capabilities]</pre>
+
+    <p>Each piece serves a distinct purpose:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Purpose</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>What it does</strong></td>
+          <td>Tells Claude the skill&rsquo;s function</td>
+          <td>&ldquo;Analyzes Figma design files and generates developer handoff documentation&rdquo;</td>
+        </tr>
+        <tr>
+          <td><strong>When to use it</strong></td>
+          <td>Provides trigger conditions</td>
+          <td>&ldquo;Use when user uploads .fig files, asks for &lsquo;design specs&rsquo;, &lsquo;component documentation&rsquo;, or &lsquo;design-to-code handoff&rsquo;&rdquo;</td>
+        </tr>
+        <tr>
+          <td><strong>Key capabilities</strong></td>
+          <td>Scopes what the skill can handle</td>
+          <td>&ldquo;Handles account creation, payment setup, and subscription management&rdquo;</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Good vs Bad Descriptions: Real Examples from the PDF</h3>
+
+    <p>The PDF guide gives concrete examples. Study these carefully &mdash; the difference between a skill that triggers reliably and one that never fires often comes down to the description.</p>
+
+    <p><strong>Good &mdash; specific and actionable:</strong></p>
+
+    <div class="yaml-block"><span class="yaml-key">description:</span> <span class="yaml-value">Analyzes Figma design files and generates developer handoff
+  documentation. Use when user uploads .fig files, asks for "design specs",
+  "component documentation", or "design-to-code handoff".</span></div>
+
+    <p>Why it works: States what it does (analyzes Figma, generates docs), when to use it (specific file types and phrases), and scopes the capability (handoff documentation).</p>
+
+    <p><strong>Good &mdash; includes trigger phrases:</strong></p>
+
+    <div class="yaml-block"><span class="yaml-key">description:</span> <span class="yaml-value">Manages Linear project workflows including sprint planning,
+  task creation, and status tracking. Use when user mentions "sprint",
+  "Linear tasks", "project planning", or asks to "create tickets".</span></div>
+
+    <p>Why it works: Lists the actual words a user would type. Claude matches on &ldquo;sprint&rdquo;, &ldquo;Linear tasks&rdquo;, &ldquo;create tickets&rdquo; &mdash; all natural requests.</p>
+
+    <p><strong>Good &mdash; clear value proposition:</strong></p>
+
+    <div class="yaml-block"><span class="yaml-key">description:</span> <span class="yaml-value">End-to-end customer onboarding workflow for PayFlow. Handles
+  account creation, payment setup, and subscription management. Use when
+  user says "onboard new customer", "set up subscription", or
+  "create PayFlow account".</span></div>
+
+    <p>Why it works: Combines scope (what steps it handles) with specific phrases a user would say.</p>
+
+    <p><strong>Bad &mdash; too vague:</strong></p>
+
+    <div class="yaml-block"><span class="yaml-comment"># Too vague</span>
+<span class="yaml-key">description:</span> <span class="yaml-value">Helps with projects.</span></div>
+
+    <p>Claude can&rsquo;t distinguish this from any other skill. Every request &ldquo;helps with projects.&rdquo;</p>
+
+    <p><strong>Bad &mdash; missing triggers:</strong></p>
+
+    <div class="yaml-block"><span class="yaml-comment"># Missing triggers</span>
+<span class="yaml-key">description:</span> <span class="yaml-value">Creates sophisticated multi-page documentation systems.</span></div>
+
+    <p>Tells Claude <em>what</em> but never <em>when</em>. A user asking &ldquo;write me some docs&rdquo; won&rsquo;t match because there&rsquo;s no trigger phrase connecting user language to the skill.</p>
+
+    <p><strong>Bad &mdash; too technical, no user triggers:</strong></p>
+
+    <div class="yaml-block"><span class="yaml-comment"># Too technical</span>
+<span class="yaml-key">description:</span> <span class="yaml-value">Implements the Project entity model with hierarchical relationships.</span></div>
+
+    <p>Written for developers reading code, not for Claude matching user requests. No user says &ldquo;implement the Project entity model.&rdquo;</p>
+
+    <h3>Progressive Disclosure: Level 1 vs Level 2</h3>
+
+    <p>Course 1 introduced the three levels. Now let&rsquo;s understand the first two deeply, because they&rsquo;re what you control with descriptions and instructions.</p>
+
+    <p><strong>Level 1: Frontmatter (always loaded)</strong></p>
+
+    <p>The <code>name</code> and <code>description</code> fields are loaded into Claude&rsquo;s system prompt at the start of every conversation. Claude reads all skill descriptions before you even type your first message. This is the &ldquo;menu&rdquo; Claude uses to decide which skills might be relevant.</p>
+
+    <p><strong>Level 2: SKILL.md body (loaded when relevant)</strong></p>
+
+    <p>The markdown content below the frontmatter &mdash; your actual instructions &mdash; only loads when Claude decides the skill is relevant to the current request. This is triggered either by:</p>
+
+    <ul>
+      <li>Claude matching your description to the user&rsquo;s query (automatic invocation)</li>
+      <li>The user typing <code>/skill-name</code> (direct invocation)</li>
+    </ul>
+
+    <p>Here&rsquo;s the key insight from the skills docs on how this affects what Claude sees:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Frontmatter setting</th>
+          <th>You can invoke</th>
+          <th>Claude can invoke</th>
+          <th>When loaded into context</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>(default)</td>
+          <td>Yes</td>
+          <td>Yes</td>
+          <td>Description always in context, full skill loads when invoked</td>
+        </tr>
+        <tr>
+          <td><code>disable-model-invocation: true</code></td>
+          <td>Yes</td>
+          <td>No</td>
+          <td>Description not in context, full skill loads when you invoke</td>
+        </tr>
+        <tr>
+          <td><code>user-invocable: false</code></td>
+          <td>No</td>
+          <td>Yes</td>
+          <td>Description always in context, full skill loads when invoked</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Notice: when <code>disable-model-invocation: true</code> is set, the description isn&rsquo;t even loaded into Claude&rsquo;s system prompt. The skill becomes invisible to Claude until you explicitly invoke it with <code>/name</code>. This is useful for skills with side effects (like deployment) that you don&rsquo;t want Claude triggering on its own.</p>
+
+    <h3>Reference Content vs Task Content</h3>
+
+    <p>The skills docs draw a distinction between two types of skill content that affects how you write instructions:</p>
+
+    <p><strong>Reference content</strong> adds knowledge Claude applies to your current work &mdash; conventions, patterns, style guides, domain knowledge. This content runs inline so Claude can use it alongside your conversation context.</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">Reference skill example</div>
+      <pre>---
+name: api-conventions
+description: API design patterns for this codebase
+---
+
+When writing API endpoints:
+- Use RESTful naming conventions
+- Return consistent error formats
+- Include request validation</pre>
+    </div>
+
+    <p><strong>Task content</strong> gives Claude step-by-step instructions for a specific action. These are often skills you invoke directly with <code>/skill-name</code>.</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">Task skill example</div>
+      <pre>---
+name: deploy
+description: Deploy the application to production
+context: fork
+disable-model-invocation: true
+---
+
+Deploy the application:
+1. Run the test suite
+2. Build the application
+3. Push to the deployment target</pre>
+    </div>
+
+    <p>The code-review-checklist skill you&rsquo;ll build in this course is <strong>task content</strong> &mdash; it gives Claude a structured procedure to follow. The daily-standup from Course 1 was also task content. Reference skills become more important as you build library-style skills in later courses.</p>
+
+    <h3>Writing Specific, Actionable Instructions</h3>
+
+    <p>The PDF guide is emphatic: vague instructions produce vague results. Compare:</p>
+
+    <p><strong>Good &mdash; specific and actionable:</strong></p>
+
+    <pre>Run `python scripts/validate.py --input {filename}` to check data format.
+If validation fails, common issues include:
+- Missing required fields (add them to the CSV)
+- Invalid date formats (use YYYY-MM-DD)</pre>
+
+    <p><strong>Bad &mdash; vague directive:</strong></p>
+
+    <pre>Validate the data before proceeding.</pre>
+
+    <p>The good example tells Claude <em>exactly</em> what command to run, what tool to use, and what to do when things go wrong. The bad example leaves Claude guessing about what &ldquo;validate&rdquo; means, what tool to use, and what success looks like.</p>
+
+    <p>This principle applies to every instruction in your SKILL.md body:</p>
+
+    <ul>
+      <li>Name specific files, commands, and tools</li>
+      <li>Define what &ldquo;success&rdquo; looks like for each step</li>
+      <li>Anticipate common failure modes and provide specific fixes</li>
+      <li>Use concrete examples of good vs bad output</li>
+    </ul>
+
+    <h3>The Recommended SKILL.md Structure</h3>
+
+    <p>The PDF guide provides a template for structuring skill instructions:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">Recommended SKILL.md structure</div>
+      <pre>---
+name: your-skill
+description: [...]
+---
+
+# Your Skill Name
+
+## Instructions
+
+### Step 1: [First Major Step]
+Clear explanation of what happens.
+
+Example:
+```bash
+python scripts/fetch_data.py --project-id PROJECT_ID
+```
+Expected output: [describe what success looks like]
+
+### Step 2: [Second Major Step]
+...
+
+## Examples
+
+### Example 1: [common scenario]
+User says: "Set up a new marketing campaign"
+Actions:
+1. Fetch existing campaigns via MCP
+2. Create new campaign with provided parameters
+Result: Campaign created with confirmation link
+
+## Troubleshooting
+
+### Error: [Common error message]
+Cause: [Why it happens]
+Solution: [How to fix it]</pre>
+    </div>
+
+    <p>This structure ensures:</p>
+
+    <ul>
+      <li><strong>Steps</strong> give Claude a clear sequence to follow</li>
+      <li><strong>Examples</strong> show Claude what &ldquo;good&rdquo; looks like for common cases</li>
+      <li><strong>Troubleshooting</strong> prevents Claude from getting stuck on known issues</li>
+    </ul>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li>PDF Guide: Chapter 2 &ldquo;Planning and Design&rdquo; (pp. 7&ndash;13) &mdash; Description formula, good/bad examples, instruction best practices</li>
+        <li>Skills docs: &ldquo;Types of skill content&rdquo; section &mdash; Reference vs task content</li>
+        <li>Skills docs: &ldquo;Control who invokes a skill&rdquo; section &mdash; The invocation/context loading table</li>
+        <li>Skills docs: &ldquo;Troubleshooting&rdquo; section &mdash; Under-triggering and over-triggering diagnosis</li>
+      </ul>
+    </div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>A <strong>code-review-checklist</strong> skill that performs structured code reviews across six dimensions: correctness, readability, performance, security, testing, and a final verdict. This demonstrates the concepts because:</p>
+
+    <div class="callout info">
+      <ul>
+        <li>It needs a <strong>rich description</strong> with multiple trigger phrases (&ldquo;review this code&rdquo;, &ldquo;code review&rdquo;, &ldquo;check this PR&rdquo;)</li>
+        <li>It contains <strong>task content</strong> with clear, numbered steps for each review dimension</li>
+        <li>Each dimension has <strong>specific, actionable criteria</strong> &mdash; not vague directives</li>
+        <li>It includes an <strong>example output format</strong> so Claude knows what &ldquo;good&rdquo; looks like</li>
+        <li>It&rsquo;s immediately testable on any code file or diff</li>
+      </ul>
+    </div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Create the skill directory</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>mkdir -p ~/.claude/skills/code-review-checklist</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Analyze the description</span>
+      <div class="step-content">
+        <p>Before writing any code, let&rsquo;s design the description using the formula:</p>
+
+        <table class="tool-table">
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Content</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>What it does</strong></td>
+              <td>Performs a structured code review across six quality dimensions</td>
+            </tr>
+            <tr>
+              <td><strong>When to use it</strong></td>
+              <td>When user says &ldquo;review this code&rdquo;, &ldquo;code review&rdquo;, &ldquo;check this PR&rdquo;, &ldquo;review my changes&rdquo;</td>
+            </tr>
+            <tr>
+              <td><strong>Key capabilities</strong></td>
+              <td>Evaluates correctness, readability, performance, security, testing, and provides a verdict</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>Combined:</p>
+
+        <pre>Performs a structured code review covering correctness, readability,
+performance, security, and testing. Use when the user says "review this
+code", "code review", "check this PR", "review my changes", or asks for
+feedback on code quality. Produces a checklist with per-dimension
+verdicts and an overall assessment.</pre>
+
+        <p>Notice how this follows every principle:</p>
+        <ul>
+          <li>States function clearly (structured code review)</li>
+          <li>Lists 5 trigger phrases a user would naturally say</li>
+          <li>Scopes capabilities (the six dimensions)</li>
+          <li>Describes output format (checklist with verdicts)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Write the SKILL.md</span>
+      <div class="step-content">
+        <p>Create <code>~/.claude/skills/code-review-checklist/SKILL.md</code> with the following content.</p>
+
+        <p>You can copy the file directly from this course&rsquo;s skill directory:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cp courses/course-02-descriptions-and-triggers/skill/code-review-checklist/SKILL.md \
+   ~/.claude/skills/code-review-checklist/SKILL.md</div>
+
+        <p>Or create it manually &mdash; the full content is below:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">~/.claude/skills/code-review-checklist/SKILL.md</div>
+          <pre>---
+name: code-review-checklist
+description: Performs a structured code review covering correctness, readability, performance, security, and testing. Use when the user says "review this code", "code review", "check this PR", "review my changes", or asks for feedback on code quality. Produces a checklist with per-dimension verdicts and an overall assessment.
+---
+
+# Code Review Checklist
+
+Perform a structured code review of the provided code, file, or diff. Evaluate each of the six dimensions below in order, then provide a final verdict.
+
+## How to Review
+
+1. If the user provides a file path, read the file first
+2. If the user says "review my changes" or "check this PR", run `git diff` or `git diff --cached` to get the relevant changes
+3. Evaluate each dimension below against the code
+4. For each dimension, assign a verdict: PASS, WARN, or FAIL
+5. Provide the overall verdict at the end
+
+## Dimension 1: Correctness
+
+Check whether the code does what it claims to do.
+
+- Does the logic match the stated intent (function name, comments, PR description)?
+- Are edge cases handled (empty input, null values, boundary conditions)?
+- Are return types and values correct for all code paths?
+- Do loops terminate correctly? Are off-by-one errors present?
+- Are error conditions caught and handled, not silently swallowed?
+
+Verdict: PASS if logic is sound with edge cases covered. WARN if minor gaps exist. FAIL if there are logic bugs or unhandled error paths.
+
+## Dimension 2: Readability
+
+Check whether another developer can understand this code quickly.
+
+- Are variable and function names descriptive of their purpose?
+- Is the code structure clear (small functions, logical grouping)?
+- Are complex operations broken into named steps rather than nested one-liners?
+- Is there unnecessary complexity that could be simplified?
+- Are magic numbers or strings replaced with named constants?
+
+Verdict: PASS if a new team member could follow the code without help. WARN if minor naming or structure issues. FAIL if the code is difficult to follow or uses misleading names.
+
+## Dimension 3: Performance
+
+Check for performance problems that would matter at the expected scale.
+
+- Are there O(n^2) or worse operations on collections that could grow large?
+- Are database queries or API calls made inside loops (N+1 problem)?
+- Are large objects created unnecessarily in hot paths?
+- Is there redundant computation that could be cached or memoized?
+- For frontend code: are there unnecessary re-renders or layout thrashing?
+
+Verdict: PASS if no performance concerns at expected scale. WARN if potential issues at higher scale. FAIL if there are clear performance bugs (N+1 queries, quadratic loops on unbounded input).
+
+## Dimension 4: Security
+
+Check for security vulnerabilities relevant to the code's context.
+
+- Is user input validated and sanitized before use?
+- Are SQL queries parameterized (no string concatenation)?
+- Is sensitive data (passwords, tokens, keys) excluded from logs and error messages?
+- Are authentication and authorization checks in place for protected operations?
+- For web code: is output escaped to prevent XSS? Are CSRF tokens used for state-changing operations?
+
+Verdict: PASS if no security concerns found. WARN if minor hardening opportunities exist. FAIL if there are exploitable vulnerabilities (SQL injection, XSS, exposed secrets).
+
+## Dimension 5: Testing
+
+Check whether the code has adequate test coverage for its risk level.
+
+- Do tests exist for the core functionality being added or changed?
+- Do tests cover the happy path AND at least one error/edge case?
+- Are tests testing behavior (what the code does) not implementation (how it does it)?
+- If this is a bug fix, is there a regression test that would have caught the original bug?
+- If no tests exist for this code, note this as a gap
+
+Verdict: PASS if tests adequately cover the changes. WARN if tests exist but miss edge cases. FAIL if no tests exist for non-trivial logic, or if existing tests are broken.
+
+## Dimension 6: Overall Verdict
+
+Synthesize the five dimensions into a final assessment.
+
+- Summarize the 1-2 most important findings across all dimensions
+- List specific action items the author should address before merging
+- Note any strengths worth calling out (good patterns, thorough error handling, clean abstractions)
+
+Final verdict:
+- **APPROVE**: All dimensions PASS, or only minor WARNs that don't need changes before merge
+- **REQUEST CHANGES**: Any dimension is FAIL, or multiple WARNs that together indicate risk
+- **NEEDS DISCUSSION**: Architectural or design concerns that need team input before proceeding
+
+## Output Format
+
+Present the review in this format:
+
+```
+## Code Review: [filename or description]
+
+### Correctness: [PASS/WARN/FAIL]
+[1-3 bullet points with specific findings]
+
+### Readability: [PASS/WARN/FAIL]
+[1-3 bullet points with specific findings]
+
+### Performance: [PASS/WARN/FAIL]
+[1-3 bullet points with specific findings]
+
+### Security: [PASS/WARN/FAIL]
+[1-3 bullet points with specific findings]
+
+### Testing: [PASS/WARN/FAIL]
+[1-3 bullet points with specific findings]
+
+---
+
+### Verdict: [APPROVE / REQUEST CHANGES / NEEDS DISCUSSION]
+
+**Summary**: [1-2 sentence summary of overall code quality]
+
+**Action items**:
+- [ ] [Specific thing to fix, with file and line reference]
+- [ ] [Another specific thing to fix]
+
+**Strengths**:
+- [Something done well worth acknowledging]
+```
+
+## Rules
+
+- Be specific: reference exact line numbers, variable names, and function names
+- Be constructive: suggest fixes, not just problems
+- Be proportional: a 5-line utility function doesn't need the same scrutiny as a payment processor
+- If reviewing a diff, focus on the changed lines but note if surrounding context has issues
+- If a dimension is not applicable (e.g., no security relevance in a CSS change), mark it PASS with "Not applicable for this change"</pre>
+        </div>
+
+        <p>Study the SKILL.md and notice how it applies the concepts from this lesson:</p>
+        <ol>
+          <li><strong>Description formula</strong>: All three components present &mdash; what, when, capabilities</li>
+          <li><strong>Trigger phrases</strong>: Five natural phrases a user would say</li>
+          <li><strong>Specific instructions</strong>: Each dimension has concrete criteria, not vague guidance</li>
+          <li><strong>Output format example</strong>: Claude can see exactly what the review should look like</li>
+          <li><strong>Conditional logic</strong>: &ldquo;If no tests exist, note this as a gap&rdquo; &mdash; handles edge cases</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Test automatic triggering with different phrases</span>
+      <div class="step-content">
+        <p>Open Claude Code in a project with some code files and try each of these phrases:</p>
+        <div class="test-prompt"><p>Review this code</p></div>
+        <div class="test-prompt"><p>Can you do a code review of src/auth.ts?</p></div>
+        <div class="test-prompt"><p>Check this PR for issues</p></div>
+        <div class="test-prompt"><p>Give me feedback on my changes</p></div>
+        <p>Each phrase should trigger the skill because the description includes matching keywords. If any phrase doesn&rsquo;t trigger, look at your description &mdash; does it contain words close enough to what you typed?</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Test with direct invocation</span>
+      <div class="step-content">
+        <div class="test-prompt"><p>/code-review-checklist src/auth.ts</p></div>
+        <p>This bypasses the description matching and loads the skill directly. The output should follow the six-dimension checklist format.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Test non-triggering phrases</span>
+      <div class="step-content">
+        <p>These should <strong>NOT</strong> trigger the code review skill:</p>
+        <div class="test-prompt"><p>Write a Python function to sort a list</p></div>
+        <div class="test-prompt"><p>Explain how React hooks work</p></div>
+        <div class="test-prompt"><p>Help me set up a database</p></div>
+        <p>If any of these trigger the code review skill, your description is too broad. You&rsquo;d need to make the trigger phrases more specific.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Compare with and without the skill</span>
+      <div class="step-content">
+        <p>Try running a code review <em>without</em> the skill active (rename the folder temporarily):</p>
+        <div class="terminal-block"><span class="prompt">$ </span>mv ~/.claude/skills/code-review-checklist ~/.claude/skills/_code-review-checklist-disabled</div>
+        <p>Ask Claude: &ldquo;Review this code&rdquo; &mdash; notice Claude gives a generic, unstructured review.</p>
+        <p>Now restore it:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>mv ~/.claude/skills/_code-review-checklist-disabled ~/.claude/skills/code-review-checklist</div>
+        <p>Ask the same question &mdash; now you get the structured six-dimension checklist. This is the value of a well-crafted skill: consistent, thorough output every time.</p>
+      </div>
+    </div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li><strong>Rewrite a bad description</strong>: Take this bad description and rewrite it using the formula:
+        <div class="yaml-block"><span class="yaml-key">description:</span> <span class="yaml-value">Reviews code.</span></div>
+        Your rewrite should include what it does, when to use it (with at least 3 trigger phrases), and what capabilities it offers. Compare your version with the one in the code-review-checklist skill.
+      </li>
+      <li><strong>Add a seventh dimension</strong>: Add a new review dimension to the code-review-checklist skill &mdash; for example, &ldquo;Documentation&rdquo; or &ldquo;Accessibility&rdquo; or &ldquo;Error Handling&rdquo;. Follow the pattern of the existing dimensions: give it specific criteria, not vague guidance. Test that the new dimension appears in review output.</li>
+      <li><strong>Build a reference-style skill</strong>: Create a new skill called <code>coding-standards</code> at <code>~/.claude/skills/coding-standards/SKILL.md</code> that provides <strong>reference content</strong> (not task content). It should contain your team&rsquo;s coding conventions (naming, file structure, error handling patterns). Set <code>user-invocable: false</code> so only Claude loads it when relevant. Verify that Claude applies these standards when you ask it to write code &mdash; without you invoking the skill directly.</li>
+      <li><strong>Trigger phrase audit</strong>: Install the code-review-checklist skill. Write down 10 phrases you think a user might say when they want a code review. Test each one. Record which triggered the skill and which didn&rsquo;t. For any misses, update the description to improve coverage. Aim for at least 8 out of 10 triggering correctly.</li>
+      <li><strong>Diagnose over-triggering</strong>: If your skill triggers on unrelated requests, narrow the description. The skills docs suggest: &ldquo;Make the description more specific&rdquo; or &ldquo;Add <code>disable-model-invocation: true</code> if you only want manual invocation.&rdquo; Practice this by temporarily making your description overly broad (e.g., &ldquo;Helps with code&rdquo;), observing the over-triggering, then narrowing it back down.</li>
+    </ol>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>~/.claude/skills/code-review-checklist/SKILL.md</code> exists with correct casing</li>
+      <li>YAML frontmatter has valid <code>---</code> delimiters</li>
+      <li><code>name</code> field is <code>code-review-checklist</code> (kebab-case, matches folder)</li>
+      <li><code>description</code> follows the <code>[What] + [When] + [Capabilities]</code> formula</li>
+      <li>Description includes at least 3 trigger phrases</li>
+      <li>No XML angle brackets in frontmatter</li>
+      <li>Body instructions are specific and actionable (not &ldquo;review the code&rdquo;)</li>
+      <li>Each review dimension has concrete criteria</li>
+      <li>Example output format is included in the body</li>
+      <li>Typing &ldquo;review this code&rdquo; triggers the skill automatically</li>
+      <li>Running <code>/code-review-checklist</code> invokes it directly</li>
+      <li>Output covers all six dimensions with per-dimension verdicts</li>
+      <li>Unrelated prompts (&ldquo;write a function&rdquo;, &ldquo;explain hooks&rdquo;) do NOT trigger it</li>
+      <li>The skill appears when you ask &ldquo;What skills are available?&rdquo;</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> In <a href="course-03-full-anatomy.html">Course 3: Full Skill Anatomy &mdash; Scripts, References, and Assets</a>, you&rsquo;ll learn how to add supporting files to a skill (<code>scripts/</code>, <code>references/</code>, and <code>assets/</code> directories), progressive disclosure Level 3, running executable scripts from within a skill, keeping SKILL.md under 500 lines by extracting detail into references, and the <code>compatibility</code> frontmatter field. You&rsquo;ll build a <strong>meeting-to-actions</strong> skill with a validation script, reference guide, and output template.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-01-first-skill.html" class="prev">Your First Skill</a>
+      <a href="course-03-full-anatomy.html" class="next">Full Skill Anatomy</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html" class="current">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
