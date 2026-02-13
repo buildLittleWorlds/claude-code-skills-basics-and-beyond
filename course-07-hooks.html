@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hooks — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 1: Skills Fundamentals</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Hooks &mdash; Deterministic Control over Claude&rsquo;s Behavior</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>7</strong> of 12</span>
+      <span class="meta-pill"><strong>Intermediate</strong></span>
+      <span class="meta-pill">45 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">Every skill you&rsquo;ve built so far gives Claude <em>instructions</em> &mdash; but instructions are suggestions. Claude decides whether to follow them based on context and judgment. Sometimes you need guarantees: &ldquo;always format code after editing,&rdquo; &ldquo;never touch .env files,&rdquo; &ldquo;block destructive shell commands.&rdquo; These aren&rsquo;t judgment calls &mdash; they&rsquo;re rules. Hooks are shell commands (or LLM prompts) that execute automatically at specific points in Claude Code&rsquo;s lifecycle. They provide <strong>deterministic control</strong> &mdash; the hook runs every time, regardless of what the LLM decides to do. In this course, you&rsquo;ll learn how hooks work, where they fire, how they communicate, and how to embed them in skills. You&rsquo;ll build a <strong>safe-deploy</strong> skill with guardrails that validate every command before execution.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Courses 1&ndash;6 completed (skill fundamentals, descriptions, anatomy, testing, advanced features, workflows)</li>
+        <li><code>jq</code> installed for JSON parsing (<code>brew install jq</code> on macOS, <code>apt-get install jq</code> on Linux)</li>
+        <li>A text editor and a project directory with some files to test against</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>What Are Hooks?</h3>
+
+    <p>Hooks are shell commands (or LLM prompts) that execute automatically at specific points in Claude Code&rsquo;s lifecycle. They provide <strong>deterministic control</strong> &mdash; the hook runs every time, regardless of what the LLM decides to do.</p>
+
+    <p>Think of it this way:</p>
+
+    <ul>
+      <li><strong>Skills</strong> = &ldquo;Here&rsquo;s how to do this task&rdquo; (Claude decides when/whether to follow)</li>
+      <li><strong>Hooks</strong> = &ldquo;This code runs every time this event happens&rdquo; (no LLM judgment involved)</li>
+    </ul>
+
+    <h3>Hook Lifecycle: Where Hooks Fire</h3>
+
+    <p>Hooks fire at specific points during a Claude Code session. Here are the key events, grouped by when they occur:</p>
+
+    <p><strong>Session boundaries:</strong></p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>When it fires</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>SessionStart</code></td>
+          <td>When a session begins or resumes</td>
+        </tr>
+        <tr>
+          <td><code>SessionEnd</code></td>
+          <td>When a session terminates</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>User input:</strong></p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>When it fires</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>UserPromptSubmit</code></td>
+          <td>When you submit a prompt, before Claude processes it</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Tool execution (the agentic loop):</strong></p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>When it fires</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>PreToolUse</code></td>
+          <td>Before a tool call executes &mdash; can block it</td>
+        </tr>
+        <tr>
+          <td><code>PostToolUse</code></td>
+          <td>After a tool call succeeds</td>
+        </tr>
+        <tr>
+          <td><code>PostToolUseFailure</code></td>
+          <td>After a tool call fails</td>
+        </tr>
+        <tr>
+          <td><code>PermissionRequest</code></td>
+          <td>When a permission dialog appears</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Agent lifecycle:</strong></p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>When it fires</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>SubagentStart</code></td>
+          <td>When a subagent is spawned</td>
+        </tr>
+        <tr>
+          <td><code>SubagentStop</code></td>
+          <td>When a subagent finishes</td>
+        </tr>
+        <tr>
+          <td><code>Stop</code></td>
+          <td>When Claude finishes responding</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Team coordination:</strong></p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>When it fires</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>TeammateIdle</code></td>
+          <td>When a teammate is about to go idle</td>
+        </tr>
+        <tr>
+          <td><code>TaskCompleted</code></td>
+          <td>When a task is being marked as completed</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Context management:</strong></p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>When it fires</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>PreCompact</code></td>
+          <td>Before context compaction</td>
+        </tr>
+        <tr>
+          <td><code>Notification</code></td>
+          <td>When Claude Code sends a notification</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The two events you&rsquo;ll use most often are <code>PreToolUse</code> (to intercept actions before they happen) and <code>PostToolUse</code> (to react after they succeed).</p>
+
+    <h3>Matchers: Filtering When Hooks Fire</h3>
+
+    <p>Without a matcher, a hook fires on <strong>every</strong> occurrence of its event. Matchers let you narrow that down using regex patterns. For tool events, the matcher filters on the tool name:</p>
+
+    <pre>"matcher": "Bash"           -- only Bash tool calls
+"matcher": "Edit|Write"     -- Edit or Write tool calls
+"matcher": "mcp__.*"        -- any MCP tool</pre>
+
+    <p>Different events match on different fields:</p>
+
+    <ul>
+      <li><strong>Tool events</strong> (<code>PreToolUse</code>, <code>PostToolUse</code>, etc.) match on tool name</li>
+      <li><strong><code>SessionStart</code></strong> matches on how the session started: <code>startup</code>, <code>resume</code>, <code>clear</code>, <code>compact</code></li>
+      <li><strong><code>Notification</code></strong> matches on notification type: <code>permission_prompt</code>, <code>idle_prompt</code></li>
+      <li><strong><code>UserPromptSubmit</code></strong> and <strong><code>Stop</code></strong> don&rsquo;t support matchers &mdash; they always fire</li>
+    </ul>
+
+    <p>Omitting the matcher or using <code>"*"</code> matches everything for that event.</p>
+
+    <h3>Hook I/O: How Hooks Communicate</h3>
+
+    <p>Hooks communicate with Claude Code through a simple protocol:</p>
+
+    <p><strong>Input</strong> (JSON on stdin): Claude Code sends event-specific data as JSON. Every event includes common fields like <code>session_id</code>, <code>cwd</code>, and <code>hook_event_name</code>. Tool events add <code>tool_name</code> and <code>tool_input</code>:</p>
+
+    <pre>{
+  "session_id": "abc123",
+  "cwd": "/Users/you/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "npm test"
+  }
+}</pre>
+
+    <p><strong>Output</strong> (exit codes + stdout/stderr):</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Exit code</th>
+          <th>Meaning</th>
+          <th>Effect</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>0</code></td>
+          <td>Success</td>
+          <td>Action proceeds. Stdout is parsed for optional JSON output</td>
+        </tr>
+        <tr>
+          <td><code>2</code></td>
+          <td>Block</td>
+          <td>Action is blocked. Stderr is fed back to Claude as feedback</td>
+        </tr>
+        <tr>
+          <td>Other</td>
+          <td>Non-blocking error</td>
+          <td>Action proceeds. Stderr logged in verbose mode only</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>For finer control, exit 0 and print a JSON object to stdout. For <code>PreToolUse</code>, this lets you allow, deny, or escalate to the user:</p>
+
+    <pre>{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Destructive command blocked"
+  }
+}</pre>
+
+    <p>The three <code>permissionDecision</code> values for <code>PreToolUse</code>:</p>
+
+    <ul>
+      <li><code>"allow"</code> &mdash; proceed without showing a permission prompt</li>
+      <li><code>"deny"</code> &mdash; cancel the tool call, send the reason to Claude</li>
+      <li><code>"ask"</code> &mdash; show the permission prompt to the user as normal</li>
+    </ul>
+
+    <!-- DIVIDER between concepts subsections for readability -->
+    <div class="divider"></div>
+
+    <h3>Three Hook Types</h3>
+
+    <h3>1. Command Hooks (<code>type: "command"</code>)</h3>
+
+    <p>The most common type. Runs a shell command that reads JSON from stdin and communicates through exit codes and stdout:</p>
+
+    <pre>{
+  "type": "command",
+  "command": ".claude/hooks/my-script.sh"
+}</pre>
+
+    <p>This is what you&rsquo;ll use for deterministic rules like &ldquo;block edits to .env&rdquo; or &ldquo;run prettier after writes.&rdquo;</p>
+
+    <h3>2. Prompt Hooks (<code>type: "prompt"</code>)</h3>
+
+    <p>Instead of running a shell command, sends the hook input to a Claude model (Haiku by default) for a single-turn evaluation. The model returns <code>{"ok": true}</code> to allow or <code>{"ok": false, "reason": "..."}</code> to block:</p>
+
+    <pre>{
+  "type": "prompt",
+  "prompt": "Check if all tasks are complete. If not, respond with what remains. $ARGUMENTS"
+}</pre>
+
+    <p>Use <code>$ARGUMENTS</code> as a placeholder for the hook&rsquo;s JSON input. The model&rsquo;s only job is to return a yes/no decision.</p>
+
+    <p>Use prompt hooks when the decision requires <strong>judgment</strong> rather than a deterministic rule &mdash; for example, &ldquo;has Claude addressed all parts of the user&rsquo;s request?&rdquo;</p>
+
+    <h3>3. Agent Hooks (<code>type: "agent"</code>)</h3>
+
+    <p>Like prompt hooks, but the model gets multi-turn tool access (Read, Grep, Glob). The agent can inspect files and code before making its decision:</p>
+
+    <pre>{
+  "type": "agent",
+  "prompt": "Verify all unit tests pass. Run the test suite and check results. $ARGUMENTS",
+  "timeout": 120
+}</pre>
+
+    <p>Use agent hooks when verification requires inspecting the actual state of the codebase, not just evaluating the hook input data. Agent hooks have a longer default timeout (60s) and can run up to 50 tool-use turns.</p>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <h3>Hook Configuration: Where Hooks Live</h3>
+
+    <p>Hooks are defined in JSON settings files. The configuration has three levels of nesting:</p>
+
+    <ol>
+      <li>Choose a <strong>hook event</strong> (<code>PreToolUse</code>, <code>PostToolUse</code>, etc.)</li>
+      <li>Add a <strong>matcher group</strong> to filter when it fires</li>
+      <li>Define one or more <strong>hook handlers</strong> to run</li>
+    </ol>
+
+    <pre>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-command.sh"
+          }
+        ]
+      }
+    ]
+  }
+}</pre>
+
+    <p>Where you store this configuration determines its scope:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Location</th>
+          <th>Scope</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>~/.claude/settings.json</code></td>
+          <td>All your projects (personal)</td>
+        </tr>
+        <tr>
+          <td><code>.claude/settings.json</code></td>
+          <td>Single project (shareable, committable)</td>
+        </tr>
+        <tr>
+          <td><code>.claude/settings.local.json</code></td>
+          <td>Single project (gitignored, local-only)</td>
+        </tr>
+        <tr>
+          <td>Plugin <code>hooks/hooks.json</code></td>
+          <td>When plugin is enabled</td>
+        </tr>
+        <tr>
+          <td>Skill or agent frontmatter</td>
+          <td>While the component is active</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Use <code>$CLAUDE_PROJECT_DIR</code> in your commands to reference scripts relative to the project root:</p>
+
+    <pre>{
+  "type": "command",
+  "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/my-script.sh"
+}</pre>
+
+    <h3>Async Hooks: Non-Blocking Background Tasks</h3>
+
+    <p>By default, hooks block Claude&rsquo;s execution until they complete. For long-running tasks, set <code>"async": true</code> to run in the background:</p>
+
+    <pre>{
+  "type": "command",
+  "command": "/path/to/run-tests.sh",
+  "async": true,
+  "timeout": 300
+}</pre>
+
+    <p>Claude continues working immediately while the script runs. When it finishes, results are delivered on the next conversation turn via <code>systemMessage</code> or <code>additionalContext</code>.</p>
+
+    <p>Async hooks <strong>cannot</strong> block or control Claude&rsquo;s behavior (the action already proceeded). They&rsquo;re useful for test suites, deployments, or notifications that shouldn&rsquo;t slow down the workflow.</p>
+
+    <h3>Hooks in Skills and Agents</h3>
+
+    <p>This is where hooks and skills come together. You can define hooks directly in a skill&rsquo;s YAML frontmatter. These hooks are <strong>scoped to the skill&rsquo;s lifecycle</strong> &mdash; they activate when the skill loads and are cleaned up when it finishes.</p>
+
+    <div class="yaml-block"><span class="yaml-delimiter">---</span>
+<span class="yaml-key">name:</span> <span class="yaml-value">secure-operations</span>
+<span class="yaml-key">description:</span> <span class="yaml-value">Perform operations with security checks</span>
+<span class="yaml-key">hooks:</span>
+  <span class="yaml-key">PreToolUse:</span>
+    <span class="yaml-value">- matcher: "Bash"</span>
+      <span class="yaml-key">hooks:</span>
+        <span class="yaml-value">- type: command</span>
+          <span class="yaml-value">command: "./scripts/security-check.sh"</span>
+<span class="yaml-delimiter">---</span></div>
+
+    <p>This is powerful: a skill can carry its own guardrails. When a deployment skill activates, its hooks automatically enforce safety rules. When the skill finishes, the hooks are removed.</p>
+
+    <p>The <code>once</code> field (skills only) lets a hook run just once per session:</p>
+
+    <div class="yaml-block"><span class="yaml-key">hooks:</span>
+  <span class="yaml-key">SessionStart:</span>
+    <span class="yaml-value">- hooks:</span>
+        <span class="yaml-value">- type: command</span>
+          <span class="yaml-value">command: "./scripts/setup.sh"</span>
+          <span class="yaml-value">once: true</span></div>
+
+    <h3>The <code>/hooks</code> Menu</h3>
+
+    <p>Type <code>/hooks</code> in Claude Code to open the interactive hooks manager. You can view, add, and delete hooks without editing JSON files. Each hook is labeled with its source: <code>[User]</code>, <code>[Project]</code>, <code>[Local]</code>, or <code>[Plugin]</code>.</p>
+
+    <p>To temporarily disable all hooks: set <code>"disableAllHooks": true</code> in your settings, or use the toggle in the <code>/hooks</code> menu.</p>
+
+    <h3>Debugging Hooks</h3>
+
+    <ul>
+      <li><strong><code>Ctrl+O</code></strong>: Toggle verbose mode to see hook output in the transcript</li>
+      <li><strong><code>claude --debug</code></strong>: Full execution details including which hooks matched and their exit codes</li>
+      <li><strong>Manual testing</strong>: Pipe sample JSON to your script to test it in isolation:</li>
+    </ul>
+
+    <div class="terminal-block"><span class="prompt">$ </span>echo '{"tool_name":"Bash","tool_input":{"command":"ls"}}' | ./my-hook.sh
+<span class="prompt">$ </span>echo $?</div>
+
+    <h3>Common Pitfalls</h3>
+
+    <ol>
+      <li>
+        <p><strong>Stop hook infinite loop</strong>: If your <code>Stop</code> hook always blocks, Claude never stops. Check <code>stop_hook_active</code> in the input:</p>
+        <pre>if [ "$(echo "$INPUT" | jq -r '.stop_hook_active')" = "true" ]; then
+  exit 0  # Allow Claude to stop this time
+fi</pre>
+      </li>
+      <li>
+        <p><strong>JSON parsing errors from shell profile</strong>: If your <code>~/.zshrc</code> prints text on startup, it contaminates hook stdout. Wrap echo statements in an interactive check:</p>
+        <pre>if [[ $- == *i* ]]; then
+  echo "Shell ready"
+fi</pre>
+      </li>
+      <li>
+        <p><strong>Hook not firing</strong>: Check that your matcher is case-sensitive and matches the exact tool name. Run <code>/hooks</code> to verify the hook appears.</p>
+      </li>
+      <li>
+        <p><strong>Exit code confusion</strong>: Exit 2 = block (stderr becomes feedback). Exit 0 with JSON = structured control. Don&rsquo;t mix them &mdash; JSON is ignored on exit 2.</p>
+      </li>
+    </ol>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li><strong>Hooks reference</strong>: <code>~/.claude-code-docs/docs/hooks.md</code> &mdash; Full event schemas, JSON I/O, decision control</li>
+        <li><strong>Hooks guide</strong>: <code>~/.claude-code-docs/docs/hooks-guide.md</code> &mdash; Setup walkthrough, common patterns, troubleshooting</li>
+      </ul>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>You&rsquo;ll create three hook scripts and a skill that uses hooks in its frontmatter:</p>
+
+    <ol>
+      <li><strong><code>hooks/auto-format.sh</code></strong> &mdash; A <code>PostToolUse</code> hook that runs Prettier on any file Claude edits or creates. Demonstrates the most common hook pattern: react after a tool completes.</li>
+      <li><strong><code>hooks/protect-files.sh</code></strong> &mdash; A <code>PreToolUse</code> hook that blocks edits to sensitive files (<code>.env</code>, <code>package-lock.json</code>, <code>.git/</code>). Demonstrates blocking with exit code 2.</li>
+      <li><strong><code>hooks/settings-snippet.json</code></strong> &mdash; A complete <code>.claude/settings.json</code> example with both hooks configured, ready to copy into any project.</li>
+      <li><strong><code>skill/safe-deploy/</code></strong> &mdash; A deployment skill with hooks embedded in its frontmatter. When the skill activates, its <code>PreToolUse</code> hook validates every Bash command against a list of dangerous patterns. This demonstrates hooks scoped to a skill&rsquo;s lifecycle.</li>
+    </ol>
+
+    <div class="callout info">
+      <p>This course builds four artifacts that work together:</p>
+      <table class="tool-table">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>hooks/auto-format.sh</code></td>
+            <td><code>PostToolUse</code> hook &mdash; formats files after Claude edits them</td>
+          </tr>
+          <tr>
+            <td><code>hooks/protect-files.sh</code></td>
+            <td><code>PreToolUse</code> hook &mdash; blocks edits to sensitive files</td>
+          </tr>
+          <tr>
+            <td><code>hooks/settings-snippet.json</code></td>
+            <td>Complete <code>.claude/settings.json</code> wiring both hooks</td>
+          </tr>
+          <tr>
+            <td><code>skill/safe-deploy/SKILL.md</code></td>
+            <td>Deployment skill with embedded <code>PreToolUse</code> hook in frontmatter</td>
+          </tr>
+          <tr>
+            <td><code>skill/safe-deploy/scripts/validate-deploy-command.sh</code></td>
+            <td>Hook script that blocks dangerous commands during deployment</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Create the Auto-Format Hook</span>
+      <div class="step-content">
+        <p>This hook runs after every <code>Edit</code> or <code>Write</code> tool call and formats the affected file with Prettier.</p>
+
+        <p>Create <code>hooks/auto-format.sh</code> in the course directory (you&rsquo;ll copy it to a real project later):</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">hooks/auto-format.sh</div>
+          <pre>#!/bin/bash
+# auto-format.sh -- PostToolUse hook for Edit|Write
+# Runs prettier on files after Claude edits or creates them.
+
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+
+# Skip if no file path (shouldn't happen for Edit/Write, but be safe)
+if [ -z "$FILE_PATH" ]; then
+  exit 0
+fi
+
+# Only format files prettier understands
+case "$FILE_PATH" in
+  *.js|*.jsx|*.ts|*.tsx|*.json|*.css|*.scss|*.md|*.html|*.yaml|*.yml)
+    npx prettier --write "$FILE_PATH" 2>/dev/null
+    ;;
+esac
+
+exit 0</pre>
+        </div>
+
+        <p>Key points:</p>
+
+        <ul>
+          <li>Reads JSON from stdin, extracts <code>file_path</code> with <code>jq</code></li>
+          <li>Only formats file types Prettier handles (avoids errors on binary files)</li>
+          <li>Always exits 0 &mdash; formatting failure shouldn&rsquo;t block Claude&rsquo;s work</li>
+          <li>Uses <code>2>/dev/null</code> to suppress Prettier&rsquo;s verbose output</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Create the Protect-Files Hook</span>
+      <div class="step-content">
+        <p>This hook runs before every <code>Edit</code> or <code>Write</code> tool call and blocks changes to sensitive files.</p>
+
+        <p>Create <code>hooks/protect-files.sh</code>:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">hooks/protect-files.sh</div>
+          <pre>#!/bin/bash
+# protect-files.sh -- PreToolUse hook for Edit|Write
+# Blocks edits to sensitive files like .env, lock files, and .git/.
+
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+
+# Skip if no file path
+if [ -z "$FILE_PATH" ]; then
+  exit 0
+fi
+
+# List of protected patterns
+PROTECTED_PATTERNS=(
+  ".env"
+  "package-lock.json"
+  "yarn.lock"
+  "pnpm-lock.yaml"
+  ".git/"
+)
+
+for pattern in "${PROTECTED_PATTERNS[@]}"; do
+  if [[ "$FILE_PATH" == *"$pattern"* ]]; then
+    echo "Blocked: '$FILE_PATH' matches protected pattern '$pattern'. This file should not be modified by Claude." &gt;&amp;2
+    exit 2
+  fi
+done
+
+exit 0</pre>
+        </div>
+
+        <p>Key points:</p>
+
+        <ul>
+          <li>Exits with code <strong>2</strong> to block the action &mdash; this is the critical difference from auto-format</li>
+          <li>Writes the reason to <strong>stderr</strong> &mdash; Claude receives this as feedback and adjusts its approach</li>
+          <li>Checks multiple patterns in a loop &mdash; easy to add new protected paths</li>
+          <li>The feedback message is specific (&ldquo;matches protected pattern &lsquo;.env&rsquo;&rdquo;) not generic (&ldquo;file blocked&rdquo;)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Create the Settings Snippet</span>
+      <div class="step-content">
+        <p>This file shows how to wire both hooks into a project&rsquo;s <code>.claude/settings.json</code>:</p>
+
+        <p>Create <code>hooks/settings-snippet.json</code>:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">hooks/settings-snippet.json</div>
+          <pre>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.sh"
+          }
+        ]
+      }
+    ]
+  }
+}</pre>
+        </div>
+
+        <p>Notice the ordering: <code>PreToolUse</code> fires <em>before</em> the edit (can block it), <code>PostToolUse</code> fires <em>after</em> (reacts to it). Both use the same <code>Edit|Write</code> matcher but serve completely different purposes.</p>
+
+        <p>To install these hooks in a real project:</p>
+
+        <ol>
+          <li>Copy <code>protect-files.sh</code> and <code>auto-format.sh</code> to your project&rsquo;s <code>.claude/hooks/</code> directory</li>
+          <li>Make them executable: <code>chmod +x .claude/hooks/*.sh</code></li>
+          <li>Merge the JSON from <code>settings-snippet.json</code> into your project&rsquo;s <code>.claude/settings.json</code></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Build the Safe-Deploy Skill</span>
+      <div class="step-content">
+        <p>This skill demonstrates <strong>hooks in frontmatter</strong> &mdash; the hook activates only while the skill is running.</p>
+
+        <p>Create <code>skill/safe-deploy/SKILL.md</code>:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">skill/safe-deploy/SKILL.md</div>
+          <pre>---
+name: safe-deploy
+description: Safely deploy an application with guardrails. Use when the user says "deploy", "ship it", "push to production", or "release to staging". Validates all commands against a safety checklist before execution.
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "./scripts/validate-deploy-command.sh"
+---
+
+# Safe Deploy
+
+Deploy the application with built-in safety checks. Every Bash command is validated
+against a list of dangerous patterns before execution.
+
+## Steps
+
+1. **Confirm the deployment target** -- Ask the user which environment to deploy to
+   (staging, production, etc.). Never assume production.
+
+2. **Run pre-deployment checks**:
+   - Verify the working directory is clean: `git status --porcelain`
+   - Confirm you're on the expected branch: `git branch --show-current`
+   - Run the test suite: `npm test` (or the project's equivalent)
+   - Check for uncommitted migrations or config changes
+
+3. **Execute the deployment** -- Run the project's deployment command.
+   Common patterns:
+   - `npm run deploy -- --env staging`
+   - `git push origin main` (for Heroku-style deploys)
+   - `fly deploy` / `railway up` / `vercel --prod`
+
+4. **Verify the deployment**:
+   - Check the deployment URL or health endpoint
+   - Review deployment logs for errors
+   - Confirm the expected version is running
+
+5. **Report results** -- Summarize what was deployed, to which environment,
+   and any issues encountered.
+
+## Safety Rules
+
+The embedded `PreToolUse` hook on Bash commands validates every command against these rules:
+- **No force pushes**: `git push --force` and `git push -f` are blocked
+- **No direct production database access**: Commands containing `production` + `db` or `DROP` are blocked
+- **No deleting deployment infrastructure**: `rm -rf` on deployment directories is blocked
+- **No skipping CI**: `--no-verify` flags are blocked
+
+If a command is blocked, you'll receive feedback explaining why. Adjust the command
+to comply with the safety rules and try again.
+
+## Troubleshooting
+
+- **"Command blocked by deploy safety hook"**: Read the specific reason in the error message. The hook blocks commands that match dangerous patterns. Rephrase the command to avoid the pattern.
+- **Tests failing before deploy**: Fix the failing tests first. Never skip the test step.
+- **Wrong branch**: Switch to the correct branch before deploying. The skill checks but does not auto-switch.</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Create the Deploy Validation Script</span>
+      <div class="step-content">
+        <p>Create <code>skill/safe-deploy/scripts/validate-deploy-command.sh</code>:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">skill/safe-deploy/scripts/validate-deploy-command.sh</div>
+          <pre>#!/bin/bash
+# validate-deploy-command.sh -- PreToolUse hook for Bash (used by safe-deploy skill)
+# Blocks dangerous commands during deployment workflows.
+
+INPUT=$(cat)
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+
+# Skip if no command
+if [ -z "$COMMAND" ]; then
+  exit 0
+fi
+
+# --- Dangerous pattern checks ---
+
+# Block force pushes
+if echo "$COMMAND" | grep -qE 'git\s+push\s+.*(-f|--force)'; then
+  echo "Blocked by deploy safety hook: force push is not allowed during deployments. Use a regular push instead." &gt;&amp;2
+  exit 2
+fi
+
+# Block --no-verify (skipping pre-commit hooks, CI checks)
+if echo "$COMMAND" | grep -q '\-\-no-verify'; then
+  echo "Blocked by deploy safety hook: --no-verify is not allowed. Safety checks must not be skipped during deployments." &gt;&amp;2
+  exit 2
+fi
+
+# Block destructive rm on common deployment directories
+if echo "$COMMAND" | grep -qE 'rm\s+-rf\s+.*(deploy|dist|build|release|\.git)'; then
+  echo "Blocked by deploy safety hook: destructive removal of deployment-related directories is not allowed." &gt;&amp;2
+  exit 2
+fi
+
+# Block direct production database commands
+if echo "$COMMAND" | grep -qiE '(production|prod).*(DROP|DELETE\s+FROM|TRUNCATE)'; then
+  echo "Blocked by deploy safety hook: destructive database operations against production are not allowed." &gt;&amp;2
+  exit 2
+fi
+
+if echo "$COMMAND" | grep -qiE '(DROP|TRUNCATE).*(production|prod)'; then
+  echo "Blocked by deploy safety hook: destructive database operations against production are not allowed." &gt;&amp;2
+  exit 2
+fi
+
+# All checks passed
+exit 0</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Make the Scripts Executable</span>
+      <div class="step-content">
+        <p>After creating the files, make the hook scripts executable:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>chmod +x hooks/auto-format.sh hooks/protect-files.sh
+<span class="prompt">$ </span>chmod +x skill/safe-deploy/scripts/validate-deploy-command.sh</div>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li>
+        <p><strong>Test the protect-files hook manually</strong></p>
+        <p>Before wiring hooks into Claude Code, test them in isolation by piping sample JSON:</p>
+        <div class="terminal-block"><span class="comment"># This should exit 0 (allowed)</span>
+<span class="prompt">$ </span>echo '{"tool_input":{"file_path":"/project/src/app.ts"}}' | ./hooks/protect-files.sh
+<span class="prompt">$ </span>echo "Exit code: $?"
+
+<span class="comment"># This should exit 2 (blocked) and print a reason to stderr</span>
+<span class="prompt">$ </span>echo '{"tool_input":{"file_path":"/project/.env"}}' | ./hooks/protect-files.sh
+<span class="prompt">$ </span>echo "Exit code: $?"
+
+<span class="comment"># This should also be blocked</span>
+<span class="prompt">$ </span>echo '{"tool_input":{"file_path":"/project/.git/config"}}' | ./hooks/protect-files.sh
+<span class="prompt">$ </span>echo "Exit code: $?"</div>
+        <p>Verify: the first command exits 0 silently. The second and third exit 2 and print a &ldquo;Blocked:&rdquo; message to stderr.</p>
+      </li>
+      <li>
+        <p><strong>Test the deploy validation script</strong></p>
+        <div class="terminal-block"><span class="comment"># Should be allowed</span>
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"git push origin main"}}' | ./skill/safe-deploy/scripts/validate-deploy-command.sh
+<span class="prompt">$ </span>echo "Exit code: $?"
+
+<span class="comment"># Should be blocked (force push)</span>
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"git push --force origin main"}}' | ./skill/safe-deploy/scripts/validate-deploy-command.sh
+<span class="prompt">$ </span>echo "Exit code: $?"
+
+<span class="comment"># Should be blocked (--no-verify)</span>
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"git commit --no-verify -m fix"}}' | ./skill/safe-deploy/scripts/validate-deploy-command.sh
+<span class="prompt">$ </span>echo "Exit code: $?"
+
+<span class="comment"># Should be blocked (destructive rm)</span>
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"rm -rf dist/"}}' | ./skill/safe-deploy/scripts/validate-deploy-command.sh
+<span class="prompt">$ </span>echo "Exit code: $?"</div>
+      </li>
+      <li>
+        <p><strong>Install hooks in a real project</strong></p>
+        <p>Pick a test project (or create one) and install the hooks:</p>
+        <div class="terminal-block"><span class="comment"># Create the hooks directory in your project</span>
+<span class="prompt">$ </span>mkdir -p /path/to/project/.claude/hooks
+
+<span class="comment"># Copy the scripts</span>
+<span class="prompt">$ </span>cp hooks/auto-format.sh /path/to/project/.claude/hooks/
+<span class="prompt">$ </span>cp hooks/protect-files.sh /path/to/project/.claude/hooks/
+<span class="prompt">$ </span>chmod +x /path/to/project/.claude/hooks/*.sh
+
+<span class="comment"># Copy the settings (or merge into existing settings)</span>
+<span class="prompt">$ </span>cp hooks/settings-snippet.json /path/to/project/.claude/settings.json</div>
+        <p>Then open Claude Code in that project and:</p>
+        <ol>
+          <li>Ask Claude to edit a <code>.js</code> file &mdash; verify it gets formatted after the edit</li>
+          <li>Ask Claude to edit <code>.env</code> &mdash; verify the edit is blocked with a clear message</li>
+          <li>Run <code>/hooks</code> to see both hooks listed under their events</li>
+        </ol>
+      </li>
+      <li>
+        <p><strong>Test the safe-deploy skill with hooks</strong></p>
+        <p>Install the skill and test its embedded hooks:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>mkdir -p ~/.claude/skills/safe-deploy/scripts
+<span class="prompt">$ </span>cp skill/safe-deploy/SKILL.md ~/.claude/skills/safe-deploy/
+<span class="prompt">$ </span>cp skill/safe-deploy/scripts/validate-deploy-command.sh ~/.claude/skills/safe-deploy/scripts/
+<span class="prompt">$ </span>chmod +x ~/.claude/skills/safe-deploy/scripts/validate-deploy-command.sh</div>
+        <p>In Claude Code, invoke:</p>
+        <div class="prompt-box-dark">/safe-deploy</div>
+        <p>Then, during the deployment workflow, try asking Claude to run a force push. The embedded hook should block it and explain why. Ask Claude to proceed with a regular push instead &mdash; it should work.</p>
+      </li>
+      <li>
+        <p><strong>Write a prompt-based Stop hook</strong></p>
+        <p>Create a <code>Stop</code> hook that uses an LLM to verify Claude completed all tasks before stopping. Add this to your project&rsquo;s <code>.claude/settings.json</code>:</p>
+        <pre>{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Review the conversation and determine if all user-requested tasks are complete. If something was requested but not done, respond with {\"ok\": false, \"reason\": \"Still need to: [what's missing]\"}. If everything is done, respond with {\"ok\": true}."
+          }
+        ]
+      }
+    ]
+  }
+}</pre>
+        <p>Test it: ask Claude to do two things (e.g., &ldquo;create a file called test.txt and then list the directory&rdquo;). Observe whether the Stop hook detects incomplete work.</p>
+      </li>
+    </ol>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>hooks/auto-format.sh</code> exists and is executable</li>
+      <li><code>hooks/protect-files.sh</code> exists and is executable</li>
+      <li><code>hooks/settings-snippet.json</code> is valid JSON with both <code>PreToolUse</code> and <code>PostToolUse</code> hooks</li>
+      <li><code>skill/safe-deploy/SKILL.md</code> has valid YAML frontmatter with a <code>hooks</code> field</li>
+      <li><code>skill/safe-deploy/scripts/validate-deploy-command.sh</code> exists and is executable</li>
+      <li>Piping <code>.env</code> file path JSON to <code>protect-files.sh</code> exits with code 2</li>
+      <li>Piping a normal file path to <code>protect-files.sh</code> exits with code 0</li>
+      <li>Piping <code>git push --force</code> JSON to <code>validate-deploy-command.sh</code> exits with code 2</li>
+      <li>Piping <code>git push origin main</code> JSON to <code>validate-deploy-command.sh</code> exits with code 0</li>
+      <li>You understand the difference between exit 2 (block with stderr) and exit 0 with JSON (structured control)</li>
+      <li>You can explain when to use command hooks vs prompt hooks vs agent hooks</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> The remaining courses involve monitoring AI agents in separate terminal sessions, orchestrating multi-agent workflows, and building automation tooling. <a href="course-07h-terminal-workspace.html">Course 7&frac12;: Your Terminal Workspace</a> prepares your terminal environment for that work by introducing tmux &mdash; the tool you&rsquo;ll use to observe and manage multiple Claude instances running in parallel.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-06-multi-step-workflows.html" class="prev">Multi-Step Workflows</a>
+      <a href="course-07h-terminal-workspace.html" class="next">Terminal Workspace</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html" class="current">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
