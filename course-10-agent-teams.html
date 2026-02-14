@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Teams — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 2: Integrated Advanced</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Agent Teams &mdash; Orchestrating Parallel Work</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>10</strong> of 12</span>
+      <span class="meta-pill"><strong>Advanced</strong></span>
+      <span class="meta-pill">50 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">In Course 8, you built subagents &mdash; isolated AI workers that run a task and return results. Agent teams remove the one-way limitation: multiple Claude Code instances that communicate through a mailbox, share a task list, and work in parallel. You&rsquo;ll learn team architecture, task coordination, inter-agent messaging, and the tmux orchestration layer &mdash; then build monitoring scripts and run a parallel code review with three specialized reviewers.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Courses 1&ndash;9</strong> (skills fundamentals through CLI integration)</li>
+        <li>Completed <strong>Course 7&frac12;: Your Terminal Workspace</strong> (tmux prerequisite &mdash; split panes, detached sessions, send-keys, capture-pane)</li>
+        <li>Completed <strong>Course 8: Custom Subagents</strong> (subagent config, tool restrictions, monitoring)</li>
+        <li>You&rsquo;re comfortable with <code>Ctrl+J</code> as your tmux prefix key</li>
+        <li>Claude Code installed and working (<code>claude</code> command available)</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>What Are Agent Teams?</h3>
+
+    <p>In Course 8, you built subagents &mdash; isolated AI workers that run a task and return results. Subagents are powerful, but they have a limitation: they can only talk to the agent that spawned them. A security reviewer can&rsquo;t ask a test runner to verify a fix. A frontend developer can&rsquo;t coordinate with a backend developer. Each subagent is a one-way street.</p>
+
+    <p><strong>Agent teams</strong> remove that limitation. A team is a group of Claude Code instances that:</p>
+
+    <ul>
+      <li><strong>Communicate with each other</strong> through a mailbox messaging system</li>
+      <li><strong>Share a task list</strong> so they can claim, coordinate, and track work</li>
+      <li><strong>Work in parallel</strong> &mdash; each teammate has its own context window and works independently</li>
+      <li><strong>Self-coordinate</strong> &mdash; teammates can pick up tasks, share findings, and challenge each other&rsquo;s conclusions</li>
+    </ul>
+
+    <p>Think of it this way: subagents are like sending an email and waiting for a reply. Agent teams are like putting three people in a room with a whiteboard.</p>
+
+    <h3>When to Use Teams vs Subagents</h3>
+
+    <p>This is a critical design decision. Teams add coordination overhead and use significantly more tokens. Use the right tool for the job:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Use subagents when&hellip;</th>
+          <th>Use agent teams when&hellip;</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>The task is focused and isolated</td>
+          <td>Workers need to communicate and collaborate</td>
+        </tr>
+        <tr>
+          <td>Only the final result matters</td>
+          <td>The process of discussion adds value</td>
+        </tr>
+        <tr>
+          <td>One worker can handle it</td>
+          <td>Parallel exploration beats sequential work</td>
+        </tr>
+        <tr>
+          <td>You want to minimize cost</td>
+          <td>The extra tokens are worth the speed/quality</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Strong team use cases:</strong></p>
+
+    <ul>
+      <li><strong>Research and review</strong>: multiple teammates investigate different aspects simultaneously, then share and challenge findings</li>
+      <li><strong>New modules or features</strong>: teammates each own a separate piece without stepping on each other</li>
+      <li><strong>Debugging with competing hypotheses</strong>: teammates test different theories in parallel and converge faster</li>
+      <li><strong>Cross-layer coordination</strong>: changes spanning frontend, backend, and tests, each owned by a different teammate</li>
+    </ul>
+
+    <p><strong>Stick with subagents for:</strong></p>
+
+    <ul>
+      <li>Sequential tasks with dependencies</li>
+      <li>Same-file edits</li>
+      <li>Simple, well-scoped work</li>
+      <li>Cost-sensitive workflows</li>
+    </ul>
+
+    <p><strong>Or stick with skills entirely</strong> &mdash; if the work fits in one session without filling the context window, a skill is always simpler and cheaper. For the full three-way comparison (skills vs sub-agents vs agent teams), the unified decision flowchart, and signals for when to de-escalate back to a simpler mode, see <code>courses/references/choosing-the-right-mode.md</code>.</p>
+
+    <h3>Team Architecture</h3>
+
+    <p>An agent team has four components:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Role</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Team lead</strong></td>
+          <td>The main Claude Code session. Creates the team, spawns teammates, coordinates work</td>
+        </tr>
+        <tr>
+          <td><strong>Teammates</strong></td>
+          <td>Separate Claude Code instances. Each works on assigned tasks independently</td>
+        </tr>
+        <tr>
+          <td><strong>Task list</strong></td>
+          <td>Shared work tracker. Teammates claim tasks, mark completion, manage dependencies</td>
+        </tr>
+        <tr>
+          <td><strong>Mailbox</strong></td>
+          <td>Messaging system for direct communication between agents</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="file-tree">&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;  Team Lead                                      &#9474;
+&#9474;  - Creates team and tasks                       &#9474;
+&#9474;  - Spawns teammates                             &#9474;
+&#9474;  - Synthesizes results                          &#9474;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474; Teammate A  &#9474; Teammate B   &#9474; Teammate C         &#9474;
+&#9474; (security)  &#9474; (performance)&#9474; (test coverage)    &#9474;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;  Shared: Task List + Mailbox                    &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+
+    <p>Each teammate loads the same project context as a regular session (CLAUDE.md, MCP servers, skills) plus the spawn prompt from the lead. Teammates do <strong>not</strong> inherit the lead&rsquo;s conversation history &mdash; they start fresh with their assigned task.</p>
+
+    <p>Teams and tasks are stored locally:</p>
+
+    <ul>
+      <li><strong>Team config</strong>: <code>~/.claude/teams/{team-name}/config.json</code></li>
+      <li><strong>Task list</strong>: <code>~/.claude/tasks/{team-name}/</code></li>
+    </ul>
+
+    <h3>Enabling Agent Teams</h3>
+
+    <p>Agent teams are experimental and disabled by default. Enable them by adding the feature flag to your settings:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}</pre>
+    </div>
+
+    <p>This goes in <code>~/.claude/settings.json</code> (all projects) or <code>.claude/settings.json</code> (single project). See <code>team-config/settings-snippet.json</code> in this course&rsquo;s directory for a complete configuration example.</p>
+
+    <h3>Starting a Team</h3>
+
+    <p>Tell Claude what you need and describe the team structure in natural language:</p>
+
+    <div class="prompt-box-dark">Create an agent team to review PR #142. Spawn three reviewers:
+- One focused on security implications
+- One checking performance impact
+- One validating test coverage
+Have them each review and report findings.</div>
+
+    <p>Claude creates the team, spawns teammates, assigns tasks, and coordinates. You stay in control &mdash; Claude won&rsquo;t create a team without your approval.</p>
+
+    <h3>Task Coordination</h3>
+
+    <p>The shared task list is the backbone of team coordination. Tasks have three states: <strong>pending</strong>, <strong>in progress</strong>, and <strong>completed</strong>. Tasks can also depend on other tasks &mdash; a pending task with unresolved dependencies can&rsquo;t be claimed until those dependencies complete.</p>
+
+    <p>The lead creates tasks, and teammates work through them:</p>
+
+    <ul>
+      <li><strong>Lead assigns</strong>: the lead explicitly gives a task to a specific teammate</li>
+      <li><strong>Self-claim</strong>: after finishing a task, a teammate picks up the next unassigned, unblocked task on its own</li>
+    </ul>
+
+    <p>Task claiming uses file locking to prevent race conditions when multiple teammates try to claim the same task simultaneously.</p>
+
+    <h3>Inter-Agent Communication</h3>
+
+    <p>Teammates communicate through the mailbox system:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Message type</th>
+          <th>When to use</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>message</strong></td>
+          <td>Send to one specific teammate (default for most communication)</td>
+        </tr>
+        <tr>
+          <td><strong>broadcast</strong></td>
+          <td>Send to all teammates simultaneously. Use sparingly &mdash; costs scale with team size</td>
+        </tr>
+        <tr>
+          <td><strong>shutdown_request</strong></td>
+          <td>Ask a teammate to gracefully shut down</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Messages are delivered automatically. The lead doesn&rsquo;t need to poll for updates &mdash; teammate messages and idle notifications arrive as they happen.</p>
+
+    <h3>Delegate Mode</h3>
+
+    <p>Without delegate mode, the lead sometimes starts implementing tasks itself instead of waiting for teammates. <strong>Delegate mode</strong> restricts the lead to coordination-only: spawning teammates, messaging, managing tasks, and shutting down the team. No code edits, no file writes, no implementation.</p>
+
+    <p>Enable it by pressing <code>Shift+Tab</code> to cycle into delegate mode after starting a team. This is useful when you want the lead to focus entirely on orchestration.</p>
+
+    <h3>Requiring Plan Approval</h3>
+
+    <p>For complex or risky tasks, you can require teammates to plan before implementing:</p>
+
+    <div class="prompt-box-dark">Spawn an architect teammate to refactor the auth module.
+Require plan approval before they make any changes.</div>
+
+    <p>The teammate works in read-only plan mode until the lead approves their approach. If the lead rejects the plan, the teammate revises and resubmits.</p>
+
+    <!-- DIVIDER between concept groups -->
+    <div class="divider"></div>
+
+    <h2>Display Modes</h2>
+
+    <p>Agent teams support two display modes, and this is where tmux becomes essential.</p>
+
+    <h3>In-Process Display</h3>
+
+    <p>All teammates run inside your main terminal. Navigate with:</p>
+
+    <ul>
+      <li><strong>Shift+Up/Down</strong>: select a teammate</li>
+      <li><strong>Enter</strong>: view a teammate&rsquo;s session</li>
+      <li><strong>Escape</strong>: interrupt a teammate&rsquo;s current turn</li>
+      <li><strong>Ctrl+T</strong>: toggle the task list</li>
+    </ul>
+
+    <p>This works in any terminal with no extra setup. But you can only see one teammate at a time.</p>
+
+    <h3>Split-Pane Display (tmux)</h3>
+
+    <p>Each teammate gets its own pane. You see everyone&rsquo;s output simultaneously and can click into any pane to interact directly. This is the real-world way to monitor multiple agents working in parallel.</p>
+
+    <p>The default display is <code>"auto"</code> &mdash; Claude uses split panes if you&rsquo;re already in a tmux session, and in-process otherwise. Override in settings:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>{
+  "teammateMode": "in-process"
+}</pre>
+    </div>
+
+    <p>Or per-session:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>claude --teammate-mode in-process</div>
+
+    <p>To force tmux split panes:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>{
+  "teammateMode": "tmux"
+}</pre>
+    </div>
+
+    <p><strong>Key insight</strong>: Agent teams run as background processes. Tmux gives you eyes on what they&rsquo;re doing.</p>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <h2>Quality Gates with Hooks</h2>
+
+    <p>Two hook events are designed specifically for agent teams:</p>
+
+    <h3>TeammateIdle</h3>
+
+    <p>Fires when a teammate is about to go idle after finishing its turn. Exit code 2 sends feedback and keeps the teammate working:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <div class="terminal-block">#!/bin/bash
+<span class="comment"># Check that the teammate actually produced output</span>
+if [ ! -f "./dist/output.js" ]; then
+  echo "Build artifact missing. Run the build before stopping." &gt;&amp;2
+  exit 2
+fi
+exit 0</div>
+    </div>
+
+    <h3>TaskCompleted</h3>
+
+    <p>Fires when a task is being marked as completed. Exit code 2 prevents completion and sends feedback to the model:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <div class="terminal-block">#!/bin/bash
+INPUT=$(cat)
+TASK_SUBJECT=$(echo "$INPUT" | jq -r '.task_subject')
+
+if ! npm test 2&gt;&amp;1; then
+  echo "Tests failing. Fix before completing: $TASK_SUBJECT" &gt;&amp;2
+  exit 2
+fi
+exit 0</div>
+    </div>
+
+    <p>These hooks enforce completion criteria automatically. A teammate can&rsquo;t mark a task done if the test suite is broken.</p>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <h2>The tmux Orchestration Layer</h2>
+
+    <p>This section merges Claude&rsquo;s built-in agent teams API with the tmux patterns from Course 7&frac12; and the parallel-agents tutorial. When you use split-pane mode (<code>teammateMode: "tmux"</code>), Claude handles the tmux layout automatically. But understanding the tmux layer gives you debugging tools and the ability to build custom orchestration scripts.</p>
+
+    <h3>Multi-Session Architecture</h3>
+
+    <p>When agent teams run in tmux, each teammate gets its own session. The lead&rsquo;s terminal manages the layout, but behind the scenes:</p>
+
+    <div class="file-tree">&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; Session: control (team lead -- you are here)&#9474;
+&#9474; &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;   &#9474;
+&#9474; &#9474; Agent status  &#9474; Integration testing   &#9474;   &#9474;
+&#9474; &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;   &#9474;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474; (Background sessions)                       &#9474;
+&#9474; [teammate-1]  [teammate-2]  [teammate-3]    &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+
+    <h3>The Control Dashboard</h3>
+
+    <p>For manual orchestration outside of Claude&rsquo;s built-in display, you can build your own monitoring layout. The <code>scripts/team-dashboard.sh</code> included in this course creates a tmux session with:</p>
+
+    <ul>
+      <li><strong>Top row</strong>: one pane per agent, using <code>watch</code> + <code>capture-pane</code> for live tailing</li>
+      <li><strong>Bottom pane</strong>: your command center</li>
+    </ul>
+
+    <div class="terminal-block"><span class="comment"># Create the monitoring layout</span>
+<span class="prompt">$ </span>./scripts/team-dashboard.sh my-team 3</div>
+
+    <p>This creates:</p>
+
+    <div class="file-tree">&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; Agent 1     &#9474; Agent 2     &#9474; Agent 3     &#9474;
+&#9474; (live tail) &#9474; (live tail) &#9474; (live tail) &#9474;
+&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9508;
+&#9474;            Command Center               &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+
+    <h3>Launching Agents from a Control Session</h3>
+
+    <p>The key tmux patterns for agent orchestration:</p>
+
+    <p><strong>Start an agent without leaving your terminal:</strong></p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>tmux send-keys -t session-name 'claude "Your task prompt here"' Enter</div>
+
+    <p><strong>Peek at agent progress:</strong></p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>tmux capture-pane -t session-name -p | tail -20</div>
+
+    <p><strong>Live-tail an agent&rsquo;s output:</strong></p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>watch -n 2 'tmux capture-pane -t session-name -p | tail -15'</div>
+
+    <p><strong>Send a command to all agents simultaneously:</strong></p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <div class="terminal-block">for session in agent-1 agent-2 agent-3; do
+  tmux send-keys -t $session "Summarize your current progress" Enter
+done</div>
+    </div>
+
+    <p><strong>Capture and compare outputs:</strong></p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <div class="terminal-block">echo "=== Agent 1 ===" &amp;&amp; tmux capture-pane -t agent-1 -p | tail -10
+echo "=== Agent 2 ===" &amp;&amp; tmux capture-pane -t agent-2 -p | tail -10</div>
+    </div>
+
+    <h3>Ownership Boundaries and Conflict Prevention</h3>
+
+    <p>When multiple agents work on the same codebase, file conflicts are the biggest risk. Establish clear ownership:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Owner</th>
+          <th>Responsibility</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Agent A</strong></td>
+          <td>Specific directories/files (e.g., <code>src/auth/</code>)</td>
+        </tr>
+        <tr>
+          <td><strong>Agent B</strong></td>
+          <td>Different directories/files (e.g., <code>src/api/</code>)</td>
+        </tr>
+        <tr>
+          <td><strong>Human</strong></td>
+          <td>Shared config files, integration decisions</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Best practices:</strong></p>
+
+    <ul>
+      <li>Each agent owns specific directories &mdash; never have two agents edit the same file</li>
+      <li>Shared configuration files are human-owned</li>
+      <li>Use the task list to make ownership explicit</li>
+      <li>If agents need to coordinate on a shared interface, define the contract first, then let each agent implement their side independently</li>
+    </ul>
+
+    <p>Refer to the tmux quick-reference from Course 7&frac12; for the exact tmux commands.</p>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li><strong>Agent teams docs</strong>: Full API reference (spawning, tasks, messaging, display modes, hooks)</li>
+        <li><strong>Hooks docs</strong>: TeammateIdle and TaskCompleted hook events</li>
+        <li><strong>Course 7&frac12; tmux-quickref.md</strong>: Quick reference for tmux commands used in this course</li>
+        <li><strong>Course 8</strong>: Custom subagents (subagent comparison point)</li>
+        <li><strong>Choosing the Right Mode</strong>: Three-way comparison table, decision flowchart, escalation and de-escalation signals</li>
+      </ul>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>Five deliverables that demonstrate agent teams from configuration through orchestration:</p>
+
+    <ol>
+      <li><strong><code>settings-snippet.json</code></strong> &mdash; Configuration to enable agent teams and set up quality gate hooks</li>
+      <li><strong><code>verify-task-completion.sh</code></strong> &mdash; A TaskCompleted hook that runs the test suite and blocks completion if tests fail</li>
+      <li><strong><code>team-dashboard.sh</code></strong> &mdash; A reusable tmux script that creates a monitoring layout for any number of agents</li>
+      <li><strong><code>launch-review-team.sh</code></strong> &mdash; A tmux script that launches a 3-reviewer parallel code review (security, performance, test coverage)</li>
+      <li><strong><code>review-prompt.md</code></strong> &mdash; A prompt template for spawning the 3-reviewer team inside Claude Code</li>
+    </ol>
+
+    <div class="callout info">
+      <p><strong>Together, these cover:</strong> enabling the feature, enforcing quality, monitoring teams visually, scripting team launches, and using the built-in API.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Enable Agent Teams</span>
+      <div class="step-content">
+        <p>Copy the settings snippet into your Claude Code settings:</p>
+
+        <div class="terminal-block"><span class="comment"># View the configuration</span>
+<span class="prompt">$ </span>cat courses/course-10-agent-teams/team-config/settings-snippet.json</div>
+
+        <p>The file contains:</p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <pre>{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "teammateMode": "auto",
+  "hooks": {
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/hooks/verify-task-completion.sh",
+            "timeout": 120,
+            "statusMessage": "Running quality gate..."
+          }
+        ]
+      }
+    ]
+  }
+}</pre>
+        </div>
+
+        <p>Key settings:</p>
+
+        <ul>
+          <li><code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS</code>: enables the feature</li>
+          <li><code>teammateMode</code>: <code>"auto"</code> uses tmux split panes if available, in-process otherwise</li>
+          <li><code>TaskCompleted</code> hook: runs the verification script whenever any agent marks a task done</li>
+        </ul>
+
+        <p>To install, merge these settings into your project&rsquo;s <code>.claude/settings.json</code>:</p>
+
+        <div class="terminal-block"><span class="comment"># If you don't have a project settings file yet</span>
+<span class="prompt">$ </span>mkdir -p .claude
+<span class="prompt">$ </span>cp courses/course-10-agent-teams/team-config/settings-snippet.json .claude/settings.json
+
+<span class="comment"># If you already have settings, merge the keys manually</span></div>
+
+        <p>Start a new Claude Code session for the settings to take effect.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Install the Quality Gate Hook</span>
+      <div class="step-content">
+        <p>The <code>hooks/verify-task-completion.sh</code> script enforces a simple rule: <strong>a task can&rsquo;t be marked complete if the test suite is failing</strong>.</p>
+
+        <div class="terminal-block"><span class="comment"># Copy the hook into your project</span>
+<span class="prompt">$ </span>cp courses/course-10-agent-teams/hooks/verify-task-completion.sh .claude/hooks/
+<span class="prompt">$ </span>chmod +x .claude/hooks/verify-task-completion.sh</div>
+
+        <p>The script:</p>
+
+        <ol>
+          <li>Reads the JSON input from stdin (task ID, subject, description, teammate name)</li>
+          <li>Detects the test framework (npm, pytest, cargo, go, make)</li>
+          <li>Runs the test suite</li>
+          <li>Exits 0 if tests pass (task completion allowed)</li>
+          <li>Exits 2 if tests fail (task completion blocked, stderr fed back to the agent)</li>
+        </ol>
+
+        <p>Read the script to understand the flow:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cat courses/course-10-agent-teams/hooks/verify-task-completion.sh</div>
+
+        <p>This hook fires for <strong>all</strong> task completions &mdash; not just in agent teams. Any time any agent (or Claude itself) marks a task done, the hook runs. This is intentional: quality gates should apply universally.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Set Up the Team Dashboard Script</span>
+      <div class="step-content">
+        <p>The dashboard script creates a tmux monitoring layout for any number of agents:</p>
+
+        <div class="terminal-block"><span class="comment"># Make it executable</span>
+<span class="prompt">$ </span>chmod +x courses/course-10-agent-teams/scripts/team-dashboard.sh</div>
+
+        <p>Usage:</p>
+
+        <div class="terminal-block"><span class="comment"># Create a dashboard for 3 agents</span>
+<span class="prompt">$ </span>./courses/course-10-agent-teams/scripts/team-dashboard.sh my-review 3</div>
+
+        <p>This creates a tmux session called <code>my-review-dashboard</code> with:</p>
+
+        <ul>
+          <li>Top row split into 3 panes, each running <code>watch</code> on a corresponding tmux session</li>
+          <li>Bottom pane as your command center</li>
+        </ul>
+
+        <p>The script expects agent sessions to be named <code>{team-name}-agent-1</code>, <code>{team-name}-agent-2</code>, etc. It handles cleanup of existing dashboard sessions and works if agent sessions aren&rsquo;t running yet (the watch command will just show &ldquo;no session&rdquo; until they start).</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Set Up the Review Team Launcher</span>
+      <div class="step-content">
+        <p>The launcher script automates the entire 3-reviewer workflow:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>chmod +x courses/course-10-agent-teams/scripts/launch-review-team.sh</div>
+
+        <p>Usage:</p>
+
+        <div class="terminal-block"><span class="comment"># Launch a 3-reviewer team for the current directory</span>
+<span class="prompt">$ </span>./courses/course-10-agent-teams/scripts/launch-review-team.sh
+
+<span class="comment"># Or specify a project directory</span>
+<span class="prompt">$ </span>./courses/course-10-agent-teams/scripts/launch-review-team.sh /path/to/project</div>
+
+        <p>The script:</p>
+
+        <ol>
+          <li>Creates 3 detached tmux sessions (security-reviewer, perf-reviewer, test-reviewer)</li>
+          <li>Starts Claude Code in each session</li>
+          <li>Sends a review prompt to each agent, focused on their specialty</li>
+          <li>Launches the team dashboard for monitoring</li>
+          <li>Includes a cleanup function to kill all sessions when done</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Test with the Built-In API (In-Process)</span>
+      <div class="step-content">
+        <p>Before using the tmux scripts, try agent teams through Claude Code&rsquo;s built-in API. Start Claude Code and paste the prompt from <code>review-prompt.md</code>:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>claude</div>
+
+        <p>Then type (or paste) the review prompt:</p>
+
+        <div class="prompt-box-dark">Create an agent team called "code-review" to review the current project.
+Spawn three reviewers:
+- "security-reviewer": focused on security vulnerabilities -- injection,
+  auth issues, data exposure, access control
+- "perf-reviewer": focused on performance -- N+1 queries, unnecessary
+  allocations, missing caching, algorithmic complexity
+- "test-reviewer": focused on test coverage -- untested paths, missing
+  edge cases, brittle tests, test isolation
+
+Have each reviewer work independently, then report their findings.
+Use delegate mode so you focus on coordination, not implementation.</div>
+
+        <p>Watch how Claude:</p>
+
+        <ol>
+          <li>Creates the team and shared task list</li>
+          <li>Spawns three teammates</li>
+          <li>Assigns review tasks</li>
+          <li>Waits for results</li>
+          <li>Synthesizes findings</li>
+        </ol>
+
+        <p>Use <strong>Shift+Up/Down</strong> to cycle through teammates and see their output. Press <strong>Ctrl+T</strong> to toggle the task list.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Test with tmux Monitoring</span>
+      <div class="step-content">
+        <p>Now run the same review with the tmux orchestration layer:</p>
+
+        <p><strong>1. Start a tmux session:</strong></p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux new -s review-control</div>
+
+        <p><strong>2. Run the launcher:</strong></p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>./courses/course-10-agent-teams/scripts/launch-review-team.sh</div>
+
+        <p><strong>3.</strong> Watch all three reviewers work simultaneously in the dashboard. Compare this experience to the in-process display &mdash; you can see more detail and monitor all agents at once.</p>
+
+        <p><strong>4. When reviews are done, capture the outputs:</strong></p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <div class="terminal-block">for session in review-security-reviewer review-perf-reviewer review-test-reviewer; do
+  echo "=== $session ===" &gt;&gt; review-results.txt
+  tmux capture-pane -t $session -p -S -1000 &gt;&gt; review-results.txt 2&gt;/dev/null
+done</div>
+        </div>
+
+        <p><strong>5. Clean up:</strong></p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <div class="terminal-block"><span class="comment"># The dashboard script's cleanup function, or manually:</span>
+tmux kill-session -t review-security-reviewer 2&gt;/dev/null
+tmux kill-session -t review-perf-reviewer 2&gt;/dev/null
+tmux kill-session -t review-test-reviewer 2&gt;/dev/null
+tmux kill-session -t review-dashboard 2&gt;/dev/null</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Test the Quality Gate</span>
+      <div class="step-content">
+        <p>To verify the TaskCompleted hook works:</p>
+
+        <p><strong>1.</strong> In a project with tests, use Claude Code with agent teams enabled</p>
+
+        <p><strong>2.</strong> Spawn a team where one agent writes code and another runs tests:</p>
+
+        <div class="prompt-box-dark">Create a team. Spawn "coder" to add a new utility function with
+tests, and "tester" to verify the tests pass. The coder should
+mark their task complete when done.</div>
+
+        <p><strong>3.</strong> If the coder&rsquo;s tests are failing, the TaskCompleted hook should prevent the task from being marked done</p>
+
+        <p><strong>4.</strong> The coder receives the stderr feedback (&ldquo;Tests failing&hellip;&rdquo;) and must fix the tests before completing</p>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li>
+        <p><strong>API-only team (no tmux)</strong></p>
+        <p>Using Claude Code, spawn a 2-agent team with the built-in API. Assign one agent to review a file for security issues and another for performance issues. Observe the shared task list with Ctrl+T. Use Shift+Up/Down to view teammate output in-process. Compare how the two reviewers approach the same code differently.</p>
+      </li>
+      <li>
+        <p><strong>tmux monitoring</strong></p>
+        <p>Run the same 2-agent team, but this time set up <code>team-dashboard.sh</code> to monitor both agents in split panes. Compare the experience: can you see more detail through the tmux dashboard than through in-process display? When would you choose one over the other?</p>
+      </li>
+      <li>
+        <p><strong>Full workflow</strong></p>
+        <p>Run <code>launch-review-team.sh</code> to launch a 3-reviewer parallel code review (security, performance, test coverage). Monitor the dashboard. When all three finish, compare their findings in the control pane. Resolve any conflicting recommendations &mdash; for example, if the performance reviewer suggests removing a validation that the security reviewer flagged as critical.</p>
+      </li>
+      <li>
+        <p><strong>Quality gate</strong></p>
+        <p>Configure the <code>verify-task-completion.sh</code> hook in a project with tests. Spawn a team where one agent writes code and another runs tests. Introduce a deliberate test failure. Verify that the TaskCompleted hook prevents the coding agent from marking its task done. Fix the failure and verify the task can then be completed.</p>
+      </li>
+    </ol>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS</code> is set in your settings</li>
+      <li>Running <code>claude</code> and asking for a team spawns teammates correctly</li>
+      <li>You can see teammate output with Shift+Up/Down in in-process mode</li>
+      <li><code>team-config/settings-snippet.json</code> contains valid JSON with the feature flag and hooks</li>
+      <li><code>hooks/verify-task-completion.sh</code> is executable and handles the JSON input correctly</li>
+      <li><code>scripts/team-dashboard.sh</code> creates a multi-pane tmux layout with live-tailing</li>
+      <li><code>scripts/launch-review-team.sh</code> launches 3 Claude sessions and the dashboard</li>
+      <li>The TaskCompleted hook blocks task completion when tests fail</li>
+      <li>The TaskCompleted hook allows task completion when tests pass</li>
+      <li>You can monitor multiple agents simultaneously via the tmux dashboard</li>
+      <li>You can capture session output with <code>tmux capture-pane</code> for post-review analysis</li>
+      <li>You understand when to use teams vs subagents</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> <a href="course-11-capstone.html">Course 11: The Capstone &mdash; An Orchestrated Skill Ecosystem</a> ties everything together. You&rsquo;ll build a complete plugin that bundles skills, agents, hooks, and automation scripts into a distributable package &mdash; a full engineering workflow with PR review, changelog updates, release management, and CI monitoring, all orchestrated through tmux session scripts.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-09-skills-cli-integration.html" class="prev">CLI Integration</a>
+      <a href="course-11-capstone.html" class="next">Capstone</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html" class="current">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
