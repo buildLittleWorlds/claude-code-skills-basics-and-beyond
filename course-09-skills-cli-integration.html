@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLI Integration — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 2: Integrated Advanced</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">CLI Integration &mdash; Skills That Wrap Command-Line Tools</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>9</strong> of 12</span>
+      <span class="meta-pill"><strong>Advanced</strong></span>
+      <span class="meta-pill">40 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">In Course 5, you learned that <code>!`command`</code> runs shell commands before the skill content reaches Claude. You used it to fetch a single GitHub issue. Now you&rsquo;ll take that pattern further &mdash; building skills that orchestrate <strong>multiple CLI commands</strong> and embed domain expertise about the output. You&rsquo;ll also learn the <strong>wrapper-command pattern</strong>: standalone shell scripts that combine AI + CLI tools into commands you can run from any terminal, script into CI, or alias in your shell config. You&rsquo;ll build a <code>github-release-notes</code> skill and a <code>dx-review.sh</code> wrapper script.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Courses 1&ndash;8</strong> (skills fundamentals through custom subagents)</li>
+        <li>Completed <strong>Course 7&frac12;: Your Terminal Workspace</strong> (tmux prerequisite)</li>
+        <li>The GitHub CLI (<code>gh</code>) installed and authenticated (<code>gh auth status</code> shows logged in)</li>
+        <li>Git installed and configured</li>
+        <li>You have the <code>code-review-checklist</code> skill from Course 2 installed (used in Exercise 3)</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>Skills That Wrap CLI Tools</h3>
+
+    <p>In Course 5, you learned that <code>!`command`</code> runs shell commands before the skill content reaches Claude. You used it to fetch a single GitHub issue. Now you&rsquo;ll take that pattern further &mdash; building skills that orchestrate multiple CLI commands and embed domain expertise about the output.</p>
+
+    <p>The PDF guide calls this <strong>Category 3: Workflow Automation / MCP Enhancement</strong>. The idea: your organization already has CLI tools (<code>gh</code>, <code>git</code>, <code>npm</code>, <code>docker</code>, <code>kubectl</code>, etc.) that do specific things well. Skills wrap those tools with:</p>
+
+    <ol>
+      <li><strong>Preprocessing</strong> &mdash; <code>!`command`</code> fetches live data before Claude sees the prompt</li>
+      <li><strong>Domain expertise</strong> &mdash; reference files teach Claude how to interpret the data (PR categorization rules, changelog conventions, etc.)</li>
+      <li><strong>Structured output</strong> &mdash; templates ensure consistent formatting</li>
+      <li><strong>Error handling</strong> &mdash; specific diagnostics for CLI failures, not generic &ldquo;something went wrong&rdquo;</li>
+    </ol>
+
+    <p>This is the MCP + Skills relationship from Course 1&rsquo;s kitchen analogy in action. MCP (or in this case, CLI tools accessible via Bash) provides the kitchen &mdash; access to GitHub, git, and other services. The skill provides the recipe &mdash; how to categorize PRs, format changelogs, and handle edge cases.</p>
+
+    <h3>The Dynamic Context Pattern at Scale</h3>
+
+    <p>In Course 5, your <code>investigate-issue</code> skill had one <code>!`command`</code> call:</p>
+
+    <div class="terminal-block"><span class="prompt">  </span>!`gh issue view $0 --json title,body,labels,assignees,comments`</div>
+
+    <p>The <code>github-release-notes</code> skill you&rsquo;ll build in this course has <strong>four</strong>:</p>
+
+    <div class="terminal-block">Latest tag: !`git describe --tags --abbrev=0 2>/dev/null || echo "no-tags-found"`
+PRs since last tag: !`gh pr list --state merged --search "merged:>=..." --json ... 2>/dev/null || echo "ERROR: ..."`
+Current branch: !`git branch --show-current 2>/dev/null || echo "unknown"`
+Repo: !`gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null || echo "unknown"`</div>
+
+    <p>Each command serves a purpose:</p>
+
+    <ul>
+      <li><code>git describe</code> finds the baseline (what&rsquo;s the last release?)</li>
+      <li><code>gh pr list</code> fetches the changes (what happened since then?)</li>
+      <li><code>git branch</code> provides context (which branch are we on?)</li>
+      <li><code>gh repo view</code> gets the repo identifier (for comparison links)</li>
+    </ul>
+
+    <p>Two key patterns to notice:</p>
+
+    <p><strong>Defensive commands</strong>: Every command uses <code>2>/dev/null || echo "FALLBACK"</code>. This is critical. If <code>gh</code> isn&rsquo;t authenticated or there&rsquo;s no git remote, the command still produces output &mdash; an error string that the skill instructions can check for and handle gracefully. Without this, a failed preprocessing command would inject an empty string (or worse, a raw error message) into the prompt.</p>
+
+    <p><strong>Chained context</strong>: The <code>gh pr list</code> command uses the output of <code>git describe</code> to compute a date range. This works because <code>!`command`</code> runs in a normal shell where subshell nesting is valid. You can use <code>$(...)</code> inside <code>!`...`</code> to compose commands.</p>
+
+    <h3>Error Handling for CLI Failures</h3>
+
+    <p>Skills that wrap CLI tools fail in predictable ways. Good error handling means <strong>specific diagnostics</strong> for each failure mode:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Failure</th>
+          <th>Symptom</th>
+          <th>Diagnosis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>gh</code> not installed</td>
+          <td><code>command not found: gh</code></td>
+          <td>&ldquo;Install the GitHub CLI: <code>brew install gh</code>&rdquo;</td>
+        </tr>
+        <tr>
+          <td><code>gh</code> not authenticated</td>
+          <td><code>gh auth login</code> prompt</td>
+          <td>&ldquo;Authenticate first: <code>gh auth login</code>&rdquo;</td>
+        </tr>
+        <tr>
+          <td>No git remote</td>
+          <td>Empty repo name</td>
+          <td>&ldquo;Add a GitHub remote: <code>git remote add origin URL</code>&rdquo;</td>
+        </tr>
+        <tr>
+          <td>No git tags</td>
+          <td><code>no-tags-found</code> sentinel</td>
+          <td>&ldquo;No releases yet. Want to generate notes from all commits?&rdquo;</td>
+        </tr>
+        <tr>
+          <td>API rate limit</td>
+          <td>403 / rate limit message</td>
+          <td>&ldquo;GitHub API rate limited. Wait or use <code>gh auth refresh</code>&rdquo;</td>
+        </tr>
+        <tr>
+          <td>Private repo without access</td>
+          <td>404 / not found</td>
+          <td>&ldquo;Check your <code>gh</code> auth scope includes repo access&rdquo;</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The skill&rsquo;s instructions check for each sentinel value and provide the specific fix. This is the robust error handling pattern from Course 6 applied to CLI tool integration.</p>
+
+    <!-- DIVIDER between concept groups -->
+    <div class="divider"></div>
+
+    <h3>The Wrapper-Command Pattern</h3>
+
+    <p>Skills run inside Claude Code. But sometimes you want a <strong>standalone shell command</strong> that combines AI + CLI tools into something you can run from any terminal, script into CI, or alias in your shell config.</p>
+
+    <p>The dx-workflow tutor introduces this pattern with its <code>dx</code> toolkit &mdash; a bash dispatcher that invokes AI CLIs with pre-built prompts. The key insight is that there are <strong>three interaction modes</strong> for AI+CLI wrappers:</p>
+
+    <h3>Mode 1: Non-Interactive</h3>
+
+    <div class="terminal-block"><span class="prompt">$ </span>claude -p "prompt"</div>
+
+    <p>One-shot: feed input, get output, exit. Best for:</p>
+
+    <ul>
+      <li>Code review (<code>dx review</code>) &mdash; you want a result, not a conversation</li>
+      <li>Standup generation (<code>dx standup</code>) &mdash; summarize and done</li>
+      <li>Release notes &mdash; generate and paste into GitHub</li>
+    </ul>
+
+    <p>The <code>dx-review.sh</code> script you&rsquo;ll build uses this mode.</p>
+
+    <h3>Mode 2: Interactive Session</h3>
+
+    <div class="terminal-block"><span class="prompt">$ </span>tmux new-session -d -s ai-session
+<span class="prompt">$ </span>tmux send-keys -t ai-session "claude" Enter
+<span class="prompt">$ </span>sleep 2
+<span class="prompt">$ </span>tmux send-keys -t ai-session "explain this code..." Enter
+<span class="prompt">$ </span>tmux attach -t ai-session</div>
+
+    <p>Starts an AI session with context preloaded, then hands control to the user for follow-up questions. Best for:</p>
+
+    <ul>
+      <li>Code explanation (<code>dx explain file.ts</code>) &mdash; you&rsquo;ll want to ask &ldquo;what about this part?&rdquo;</li>
+      <li>Debugging sessions &mdash; iterative back-and-forth</li>
+    </ul>
+
+    <h3>Mode 3: Split-Pane</h3>
+
+    <div class="terminal-block"><span class="prompt">$ </span>tmux split-window -h "claude -p 'analyze these test failures...'"</div>
+
+    <p>Opens AI output alongside your current work. Best for:</p>
+
+    <ul>
+      <li>Test failure analysis (<code>dx test</code>) &mdash; see failures on the left, AI analysis on the right</li>
+      <li>Monitoring &mdash; watch AI output while continuing to work</li>
+    </ul>
+
+    <h3>How Wrapper Scripts and Skills Relate</h3>
+
+    <p>The wrapper-command pattern and skills are complementary, not competing:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Approach</th>
+          <th>Invocation</th>
+          <th>Context</th>
+          <th>Best for</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Skill</strong></td>
+          <td><code>/skill-name</code> inside Claude Code</td>
+          <td>Full Claude Code environment</td>
+          <td>Tasks during a Claude conversation</td>
+        </tr>
+        <tr>
+          <td><strong>Wrapper script</strong></td>
+          <td><code>./script.sh</code> from any terminal</td>
+          <td>Standalone, no Claude session needed</td>
+          <td>Automation, CI, shell aliases</td>
+        </tr>
+        <tr>
+          <td><strong>Script invoking a skill</strong></td>
+          <td><code>claude -p "/skill-name ..."</code></td>
+          <td>Wrapper launches Claude with skill</td>
+          <td>Best of both worlds</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The third row is the connection point. A wrapper script can invoke Claude with a skill reference:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>claude -p "/code-review-checklist
+Here is the diff:
+$(git diff --cached)"</div>
+
+    <p>This gives you the wrapper&rsquo;s convenience (run from any terminal) plus the skill&rsquo;s structured instructions (Course 2&rsquo;s review dimensions). Exercise 3 explores this connection.</p>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li><strong>Skills docs</strong>: &ldquo;Inject dynamic context&rdquo; section &mdash; <code>!`command`</code> preprocessing syntax</li>
+        <li><strong>PDF Guide</strong>: Chapter 2 &ldquo;Category 3: MCP Enhancement&rdquo; &mdash; workflow automation patterns</li>
+        <li><strong>dx-workflow-tutor</strong>: Lessons 1&ndash;5 (dx skeleton, AI selection, review/PR/explain commands)</li>
+        <li><strong>dx-workflow-tutor</strong>: Lessons 8&ndash;9 (popup mode, background watchers)</li>
+        <li><strong>Course 5 lesson</strong>: Dynamic context injection, <code>$ARGUMENTS</code> substitution</li>
+        <li><strong>Course 7&frac12; tmux-quickref.md</strong>: tmux commands for interactive and split-pane modes</li>
+      </ul>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>Two deliverables that demonstrate CLI tool integration from both sides:</p>
+
+    <h3>1. <code>github-release-notes</code> Skill</h3>
+
+    <p>A skill that generates structured release notes by fetching PRs from GitHub, categorizing them, and formatting a changelog. This demonstrates:</p>
+
+    <ul>
+      <li><strong>Multiple dynamic context commands</strong> &mdash; four <code>!`command`</code> calls for git/gh data</li>
+      <li><strong>Domain expertise in reference files</strong> &mdash; PR categorization rules and changelog conventions</li>
+      <li><strong>Structured output via template</strong> &mdash; consistent release notes format</li>
+      <li><strong>Defensive error handling</strong> &mdash; sentinel values and specific diagnostics for each failure mode</li>
+    </ul>
+
+    <div class="callout info">
+      <p><strong>File structure:</strong></p>
+      <div class="file-tree">github-release-notes/
+&#9500;&#9472;&#9472; SKILL.md                              # Workflow with dynamic CLI context
+&#9500;&#9472;&#9472; references/
+&#9474;   &#9500;&#9472;&#9472; changelog-conventions.md          # Keep a Changelog format rules
+&#9474;   &#9492;&#9472;&#9472; pr-categories.md                  # Feature/fix/breaking/docs/chore rules
+&#9492;&#9472;&#9472; assets/
+    &#9492;&#9472;&#9472; release-template.md               # Output format template</div>
+    </div>
+
+    <h3>2. <code>dx-review.sh</code> Wrapper Script</h3>
+
+    <p>A standalone shell script (~40 lines) that captures <code>git diff --cached</code>, constructs a review prompt, and runs <code>claude -p</code> for a one-shot code review. Demonstrates:</p>
+
+    <ul>
+      <li><strong>The non-interactive wrapper pattern</strong> &mdash; capture CLI output, construct prompt, run AI</li>
+      <li><strong>Edge case handling</strong> &mdash; no staged changes</li>
+      <li><strong>Skill integration</strong> &mdash; <code>--skill</code> flag invokes the <code>/code-review-checklist</code> skill from Course 2</li>
+    </ul>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Understand the Skill&rsquo;s Dynamic Context</span>
+      <div class="step-content">
+        <p>Open <code>courses/course-09-skills-cli-integration/skill/github-release-notes/SKILL.md</code> and study the Context section. Four <code>!`command`</code> calls run before Claude sees the prompt:</p>
+
+        <div class="terminal-block">Latest tag: !`git describe --tags --abbrev=0 2>/dev/null || echo "no-tags-found"`</div>
+
+        <p>This command:</p>
+
+        <ol>
+          <li><code>git describe --tags --abbrev=0</code> &mdash; finds the most recent tag</li>
+          <li><code>2>/dev/null</code> &mdash; suppresses stderr (no tag warnings)</li>
+          <li><code>|| echo "no-tags-found"</code> &mdash; if the command fails, outputs a sentinel string</li>
+        </ol>
+
+        <p>The skill&rsquo;s Step 1 (&ldquo;Validate prerequisites&rdquo;) checks for this sentinel and tells the user what to do. This is the defensive preprocessing pattern: every command produces useful output even on failure.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Study the Reference Files</span>
+      <div class="step-content">
+        <p>Open the two reference files:</p>
+
+        <p><strong><code>references/pr-categories.md</code></strong> defines classification rules with a clear priority order:</p>
+
+        <ul>
+          <li>Breaking &gt; Security &gt; Feature/Fix &gt; Docs &gt; Chores</li>
+          <li>Uses signals from PR titles (conventional commit prefixes), labels, and body text</li>
+          <li>Handles ambiguous cases (PR touches both feature and fix code)</li>
+        </ul>
+
+        <p><strong><code>references/changelog-conventions.md</code></strong> codifies the Keep a Changelog format:</p>
+
+        <ul>
+          <li>Section ordering (Added, Changed, Deprecated, Removed, Fixed, Security)</li>
+          <li>Entry format (past tense, PR reference, user-impact focus)</li>
+          <li>Good vs bad entry examples</li>
+        </ul>
+
+        <p>These reference files are why skills produce better output than raw prompts. A prompt like &ldquo;generate release notes from these PRs&rdquo; works, but it produces inconsistent formatting. The skill embeds your team&rsquo;s specific conventions.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Study the Output Template</span>
+      <div class="step-content">
+        <p>Open <code>assets/release-template.md</code>. It defines the exact structure Claude should produce, with placeholder instructions for each field. The skill&rsquo;s Step 4 points Claude to this template.</p>
+
+        <p>This is the pattern from Course 3 (Full Skill Anatomy): SKILL.md stays focused on the workflow, reference files carry the domain expertise, and asset files define the output format.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Install the Skill</span>
+      <div class="step-content">
+        <p>Copy the skill to your personal skills directory:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cp -r courses/course-09-skills-cli-integration/skill/github-release-notes ~/.claude/skills/github-release-notes</div>
+
+        <p>Verify the structure:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>ls -R ~/.claude/skills/github-release-notes/</div>
+
+        <p>You should see:</p>
+
+        <div class="file-tree">SKILL.md
+assets/
+references/
+
+assets:
+release-template.md
+
+references:
+changelog-conventions.md
+pr-categories.md</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Test the Skill Against a Real Repo</span>
+      <div class="step-content">
+        <p>Navigate to a repository that has git tags and merged PRs. If you don&rsquo;t have one handy, you can test against any open-source project you&rsquo;ve cloned:</p>
+
+        <div class="prompt-box-dark">/github-release-notes</div>
+
+        <p>Watch for:</p>
+
+        <ol>
+          <li>The dynamic context commands preprocess &mdash; you should see actual data, not the <code>!`command`</code> placeholders</li>
+          <li>PRs are categorized into Added/Changed/Fixed/Security headings</li>
+          <li>The output follows the changelog conventions (past tense, PR references)</li>
+          <li>A comparison link appears at the bottom</li>
+          <li>If a version argument was provided, it uses that; otherwise, it suggests one</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Test Error Handling</span>
+      <div class="step-content">
+        <p>Test the skill&rsquo;s error paths:</p>
+
+        <p><strong>No tags</strong>: In a repo with no tags, verify the skill detects &ldquo;no-tags-found&rdquo; and offers alternatives.</p>
+
+        <p><strong>No GitHub remote</strong>: In a local-only repo (no <code>origin</code> pointing to GitHub), verify the skill detects &ldquo;unknown&rdquo; repo and tells you to add a remote.</p>
+
+        <p><strong>No recent PRs</strong>: In a repo where the latest tag is very recent (no PRs since), verify the skill handles an empty PR list gracefully.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Study the Wrapper Script</span>
+      <div class="step-content">
+        <p>Open <code>courses/course-09-skills-cli-integration/scripts/dx-review.sh</code>. This script follows the non-interactive wrapper pattern:</p>
+
+        <div class="terminal-block"><span class="comment"># The wrapper pattern:</span>
+1. Capture CLI output    &rarr; git diff --cached
+2. Check for edge cases  &rarr; empty diff &rarr; exit with help message
+3. Construct prompt      &rarr; review instructions + diff content
+4. Run AI one-shot       &rarr; claude -p "$PROMPT"</div>
+
+        <p>Key implementation details:</p>
+
+        <ul>
+          <li><code>set -e</code> at the top: the script exits on any error</li>
+          <li><code>$DIFF</code> check: handles the &ldquo;no staged changes&rdquo; edge case with a helpful message</li>
+          <li><code>$STAT</code> and <code>$FILE_COUNT</code>: displayed to the user before the review starts (so they see what&rsquo;s being reviewed)</li>
+          <li><code>--skill</code> flag: switches from a raw prompt to invoking the <code>/code-review-checklist</code> skill</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">8</span>
+      <span class="step-title">Test the Wrapper Script</span>
+      <div class="step-content">
+        <p>Stage some changes in any git repo:</p>
+
+        <div class="terminal-block"><span class="comment"># Make a change</span>
+<span class="prompt">$ </span>echo "// TODO: clean this up" >> some-file.js
+<span class="prompt">$ </span>git add some-file.js
+
+<span class="comment"># Run the review</span>
+<span class="prompt">$ </span>bash courses/course-09-skills-cli-integration/scripts/dx-review.sh</div>
+
+        <p>You should see:</p>
+
+        <ol>
+          <li>The file count and diff stat printed</li>
+          <li>Claude&rsquo;s review output (from the raw prompt)</li>
+        </ol>
+
+        <p>Test the edge case:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>git reset HEAD some-file.js   <span class="comment"># Unstage</span>
+<span class="prompt">$ </span>bash courses/course-09-skills-cli-integration/scripts/dx-review.sh</div>
+
+        <p>You should see the &ldquo;No staged changes&rdquo; message with instructions.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">9</span>
+      <span class="step-title">Compare Raw Prompt vs Skill</span>
+      <div class="step-content">
+        <p>Run the review both ways:</p>
+
+        <div class="terminal-block"><span class="comment"># Stage changes first</span>
+<span class="prompt">$ </span>git add some-file.js
+
+<span class="comment"># Raw prompt (default)</span>
+<span class="prompt">$ </span>bash courses/course-09-skills-cli-integration/scripts/dx-review.sh
+
+<span class="comment"># With the skill</span>
+<span class="prompt">$ </span>bash courses/course-09-skills-cli-integration/scripts/dx-review.sh --skill</div>
+
+        <p>Compare the outputs. The skill version (using <code>code-review-checklist</code> from Course 2) should produce a more structured review with explicit dimensions: correctness, readability, performance, security, testing, and a verdict. The raw prompt version is functional but less consistent.</p>
+
+        <p>This demonstrates why the wrapper-script-invoking-a-skill pattern produces the best results: the wrapper handles CLI mechanics (capturing the diff, checking edge cases), and the skill provides the structured review methodology.</p>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li>
+        <p><strong>Build and test the github-release-notes skill against a real repo</strong></p>
+        <p>Install the skill as described in Step 4. Navigate to a repo with tags and merged PRs. Run <code>/github-release-notes</code> and verify: PRs are categorized correctly (check against the PR titles/labels), the changelog follows Keep a Changelog format, a comparison link is generated, and error paths work (no tags, no remote, no recent PRs).</p>
+      </li>
+      <li>
+        <p><strong>Build and test the <code>dx-review.sh</code> wrapper script</strong></p>
+        <p>Stage some changes in a test repo, run the script, and verify it produces a code review. Test the edge case of no staged changes. Then install the script somewhere on your PATH:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>cp courses/course-09-skills-cli-integration/scripts/dx-review.sh ~/.local/bin/dx-review
+<span class="prompt">$ </span>chmod +x ~/.local/bin/dx-review</div>
+        <p>Now you can run <code>dx-review</code> from any git repo.</p>
+      </li>
+      <li>
+        <p><strong>Connect the two: raw prompt vs skill</strong></p>
+        <p>Run <code>dx-review.sh</code> with and without the <code>--skill</code> flag against the same staged changes. Compare: Which produces more structured output? Which covers more review dimensions? Which is more consistent across runs? The skill version leverages Course 2&rsquo;s structured review dimensions. This is the power of wrapper scripts invoking skills.</p>
+      </li>
+      <li>
+        <p><strong>Build a <code>dx-standup</code> wrapper</strong></p>
+        <p>Create a new wrapper script at <code>scripts/dx-standup.sh</code> that: captures <code>git log --author="$(git config user.email)" --since="yesterday" --oneline</code>, constructs a standup prompt, runs <code>claude -p</code> in non-interactive mode. Bonus: add a <code>--skill</code> flag that invokes the <code>/daily-standup</code> skill from Course 1.</p>
+      </li>
+      <li>
+        <p><strong>Add an interactive mode</strong></p>
+        <p>Create a variant of <code>dx-review.sh</code> that uses tmux interactive mode (Mode 2 from the Concepts section). Instead of <code>claude -p</code>, launch Claude in a tmux session with the diff pre-loaded, so you can ask follow-up questions about the review. Hint:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>tmux new-session -d -s dx-review
+<span class="prompt">$ </span>tmux send-keys -t dx-review "claude" Enter
+<span class="prompt">$ </span>sleep 2
+<span class="prompt">$ </span>tmux send-keys -t dx-review "$PROMPT" Enter
+<span class="prompt">$ </span>tmux attach -t dx-review</div>
+      </li>
+      <li>
+        <p><strong>Extend the release notes skill</strong></p>
+        <p>Add a new dynamic context command to <code>github-release-notes/SKILL.md</code> that fetches the GitHub milestone associated with the latest tag:</p>
+        <div class="terminal-block">Milestone: !`gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.title == "TAG") | .description' 2>/dev/null || echo "no-milestone"`</div>
+        <p>Update the skill instructions to include the milestone description in the release summary.</p>
+      </li>
+    </ol>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>~/.claude/skills/github-release-notes/SKILL.md</code> exists with valid YAML frontmatter</li>
+      <li><code>name</code> field is <code>github-release-notes</code> (kebab-case, matches folder)</li>
+      <li><code>description</code> follows the <code>[What] + [When] + [Capabilities]</code> formula</li>
+      <li><code>disable-model-invocation: true</code> is set (user-controlled invocation)</li>
+      <li><code>argument-hint: "[version-tag]"</code> is set</li>
+      <li>No XML angle brackets in frontmatter</li>
+      <li>SKILL.md is under 500 lines</li>
+      <li>SKILL.md references all three supporting files with &ldquo;when to consult&rdquo; guidance</li>
+      <li>Four <code>!`command`</code> dynamic context calls are present with defensive <code>|| echo</code> fallbacks</li>
+      <li><code>references/changelog-conventions.md</code> exists with Keep a Changelog format rules</li>
+      <li><code>references/pr-categories.md</code> exists with classification rules and priority ordering</li>
+      <li><code>assets/release-template.md</code> exists with placeholder instructions</li>
+      <li>Running <code>/github-release-notes</code> in a repo with tags produces categorized release notes</li>
+      <li>Error handling works: no-tags, no-remote, and no-recent-PRs cases produce helpful messages</li>
+      <li><code>scripts/dx-review.sh</code> is executable and runs correctly with staged changes</li>
+      <li><code>scripts/dx-review.sh</code> handles the no-staged-changes edge case gracefully</li>
+      <li><code>scripts/dx-review.sh --skill</code> invokes the <code>/code-review-checklist</code> skill and produces structured output</li>
+      <li>The raw-prompt and skill versions produce noticeably different (skill is better) output</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> In <a href="course-10-agent-teams.html">Course 10: Agent Teams &mdash; Orchestrating Parallel Work</a>, you&rsquo;ll learn what agent teams are: multiple Claude Code instances with shared tasks and messaging. You&rsquo;ll explore when to use teams vs subagents, team architecture (lead agent, teammates, shared task list, mailbox messaging), and the tmux orchestration layer. You&rsquo;ll build monitoring scripts and run a parallel code review with three specialized reviewers.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-08-custom-subagents.html" class="prev">Custom Subagents</a>
+      <a href="course-10-agent-teams.html" class="next">Agent Teams</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html" class="current">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
