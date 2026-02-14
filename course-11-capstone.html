@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capstone — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 2: Integrated Advanced</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">The Capstone &mdash; An Orchestrated Skill Ecosystem</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>11</strong> of 12</span>
+      <span class="meta-pill"><strong>Advanced</strong></span>
+      <span class="meta-pill">60 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">Everything you&rsquo;ve built &mdash; skills, hooks, subagents, agent teams, tmux orchestration &mdash; comes together here. You&rsquo;ll build a complete <strong>engineering-workflow</strong> plugin: four skills that compose into a release pipeline, two agents for monitoring and quality, two hooks for automated standards enforcement, and a tmux session script that launches the entire monitoring environment. This is the full capstone pattern: skills compose into pipelines, agents provide quality gates, hooks enforce standards, and tmux scripts orchestrate it all.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Courses 1&ndash;10</strong> (the full curriculum)</li>
+        <li>Comfortable with skills (YAML frontmatter, scripts, references, arguments, dynamic context)</li>
+        <li>Comfortable with hooks (PreToolUse, PostToolUse, TaskCompleted, exit codes, JSON I/O)</li>
+        <li>Comfortable with subagents (tools, model, memory, skills preloading)</li>
+        <li>Comfortable with agent teams (spawning, task lists, messaging, delegate mode)</li>
+        <li>Comfortable with tmux orchestration (split panes, detached sessions, send-keys, capture-pane, dashboards)</li>
+        <li>Claude Code installed and working (<code>claude</code> command available)</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>Multi-Skill Ecosystems</h3>
+
+    <p>Throughout this curriculum, you&rsquo;ve built individual skills that each do one thing well. Course 1&rsquo;s standup writer, Course 4&rsquo;s PR description generator, Course 6&rsquo;s project scaffolder &mdash; each is self-contained.</p>
+
+    <p>But real engineering workflows aren&rsquo;t self-contained. A PR review naturally leads to a changelog update. A changelog update is part of a release. A release should include updated documentation. These skills form a <strong>pipeline</strong>: the output of one becomes the input of the next.</p>
+
+    <div class="file-tree">PR Review &rarr; Changelog Update &rarr; Release &rarr; Documentation
+    &darr;              &darr;               &darr;           &darr;
+PR-REVIEW.md   CHANGELOG.md   RELEASE_NOTES.md  API.md</div>
+
+    <p>The key design principle: <strong>skills communicate through shared files and git state</strong>, not through direct invocation. Each skill reads files in the project and writes files to the project. This keeps skills loosely coupled &mdash; you can run them independently or compose them into a pipeline.</p>
+
+    <h3>Skill-to-Skill Data Flow</h3>
+
+    <p>How do skills pass data between each other? Through artifacts in the project:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Producer Skill</th>
+          <th>Artifact</th>
+          <th>Consumer Skill</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>pr-reviewer</td>
+          <td><code>PR-REVIEW.md</code></td>
+          <td>changelog-updater (reads review context)</td>
+        </tr>
+        <tr>
+          <td>changelog-updater</td>
+          <td><code>CHANGELOG.md</code></td>
+          <td>release-manager (finalizes for release)</td>
+        </tr>
+        <tr>
+          <td>release-manager</td>
+          <td><code>RELEASE_NOTES.md</code></td>
+          <td>(user publishes to GitHub)</td>
+        </tr>
+        <tr>
+          <td>docs-generator</td>
+          <td><code>API.md</code></td>
+          <td>(user reviews and commits)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Each skill checks for artifacts from upstream skills. If <code>PR-REVIEW.md</code> exists when you run the changelog updater, it uses the review findings to write better entries. If it doesn&rsquo;t exist, the changelog updater still works &mdash; it just uses git log directly. This is <strong>graceful degradation</strong>: the pipeline enhances quality when skills run in sequence, but each skill works standalone.</p>
+
+    <h3>Coordinating Agents with Hooks</h3>
+
+    <p>Hooks automate what would otherwise be manual coordination:</p>
+
+    <ul>
+      <li><strong>PostToolUse on Edit|Write</strong>: The <code>auto-format.sh</code> hook runs the project&rsquo;s formatter after every file change. This means agents never commit unformatted code.</li>
+      <li><strong>TaskCompleted</strong>: The <code>verify-completion.sh</code> hook runs tests and lint before any task can close. This applies to both human work and agent work.</li>
+    </ul>
+
+    <p>Together, these hooks create a safety net: no matter how the code changes &mdash; manual edit, skill execution, agent work, or team collaboration &mdash; the formatting and quality checks run automatically.</p>
+
+    <h3>The Quality Gate Agent</h3>
+
+    <p>The <code>quality-gate</code> agent is a meta-agent: it reviews the output of other agents and skills. Instead of checking code for bugs (that&rsquo;s the pr-reviewer&rsquo;s job), it checks whether the pr-reviewer did a good job.</p>
+
+    <p>This creates a two-layer quality system:</p>
+
+    <ol>
+      <li><strong>Skills produce artifacts</strong> (reviews, changelogs, docs)</li>
+      <li><strong>Quality gate reviews the artifacts</strong> (are they complete, accurate, well-formatted?)</li>
+    </ol>
+
+    <p>The quality gate uses persistent memory (<code>memory: project</code>) to learn project-specific quality standards over time. The more you use it, the more it knows about your project&rsquo;s conventions.</p>
+
+    <h3>Plugin Packaging</h3>
+
+    <p>Until now, all your skills, agents, and hooks lived in <code>~/.claude/</code> (personal) or <code>.claude/</code> (project). A <strong>plugin</strong> bundles them into a distributable package that anyone can install.</p>
+
+    <p>The plugin structure is:</p>
+
+    <div class="file-tree">engineering-workflow/
+&#9500;&#9472;&#9472; .claude-plugin/
+&#9474;   &#9492;&#9472;&#9472; plugin.json          &larr; Manifest: name, version, description
+&#9500;&#9472;&#9472; skills/                   &larr; Skills (auto-discovered)
+&#9474;   &#9500;&#9472;&#9472; pr-reviewer/SKILL.md
+&#9474;   &#9500;&#9472;&#9472; changelog-updater/SKILL.md
+&#9474;   &#9500;&#9472;&#9472; release-manager/SKILL.md
+&#9474;   &#9492;&#9472;&#9472; docs-generator/SKILL.md
+&#9500;&#9472;&#9472; agents/                   &larr; Agents (auto-discovered)
+&#9474;   &#9500;&#9472;&#9472; ci-monitor.md
+&#9474;   &#9492;&#9472;&#9472; quality-gate.md
+&#9492;&#9472;&#9472; hooks/                    &larr; Hooks
+    &#9500;&#9472;&#9472; hooks.json            &larr; Hook configuration
+    &#9492;&#9472;&#9472; scripts/
+        &#9500;&#9472;&#9472; auto-format.sh
+        &#9492;&#9472;&#9472; verify-completion.sh</div>
+
+    <p>The <code>plugin.json</code> manifest is minimal:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>{
+  "name": "engineering-workflow",
+  "version": "1.0.0",
+  "description": "PR review, changelog, release, and docs workflow"
+}</pre>
+    </div>
+
+    <p>That&rsquo;s it. Claude Code auto-discovers components in the standard directories. The <code>name</code> field becomes the namespace: skills are invoked as <code>/engineering-workflow:pr-reviewer</code>, <code>/engineering-workflow:changelog-updater</code>, etc.</p>
+
+    <h3>Plugin Distribution</h3>
+
+    <p>Plugins can be installed at different scopes:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Scope</th>
+          <th>Settings file</th>
+          <th>Use case</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>user</strong></td>
+          <td><code>~/.claude/settings.json</code></td>
+          <td>Personal plugins, available everywhere</td>
+        </tr>
+        <tr>
+          <td><strong>project</strong></td>
+          <td><code>.claude/settings.json</code></td>
+          <td>Team plugins, shared via version control</td>
+        </tr>
+        <tr>
+          <td><strong>local</strong></td>
+          <td><code>.claude/settings.local.json</code></td>
+          <td>Project-specific, gitignored</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>For local development and testing, use <code>--plugin-dir</code>:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>claude --plugin-dir ./engineering-workflow</div>
+
+    <p>For distribution, place the plugin in a marketplace repository and install with:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>claude plugin install engineering-workflow@my-marketplace</div>
+
+    <!-- DIVIDER between concept groups -->
+    <div class="divider"></div>
+
+    <h3>Automation with Session Scripts</h3>
+
+    <p>The final piece is tmux session scripts that set up an entire automated workflow with a single command. The <code>workflow-runner.sh</code> script in this course:</p>
+
+    <ol>
+      <li>Launches a CI monitor agent in a detached tmux session</li>
+      <li>Launches a quality gate agent in another detached session</li>
+      <li>Creates a monitoring dashboard with live-tailing of both agents</li>
+      <li>Provides a command center for manual interaction</li>
+    </ol>
+
+    <p>This draws from two patterns you&rsquo;ve seen:</p>
+
+    <ul>
+      <li><strong>Session scripts</strong> (from the parallel-agents tutorial): automate multi-session setup</li>
+      <li><strong>Background watchers</strong> (from the dx-workflow tutorial): agents that run continuously and respond to events</li>
+    </ul>
+
+    <h3>Tmux Popup Mode</h3>
+
+    <p>For quick AI interactions without disrupting the dashboard layout, tmux 3.2+ supports floating popup windows:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>tmux display-popup -w 80% -h 80% -E 'claude -p "explain this test failure"'</div>
+
+    <p>The popup appears over the current panes, runs the command, and disappears when done. This is ideal for quick questions while monitoring &mdash; you don&rsquo;t need to switch panes or create new sessions.</p>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li><strong>Plugins docs</strong>: Plugin creation, manifest schema, distribution</li>
+        <li><strong>Plugins reference</strong>: Complete technical specifications, CLI commands, debugging</li>
+        <li><strong>Hooks docs</strong>: PostToolUse, TaskCompleted, async hooks</li>
+        <li><strong>Course 7&frac12; tmux-quickref.md</strong>: tmux commands used in this course</li>
+        <li><strong>Course 10</strong>: Agent teams (team coordination patterns)</li>
+        <li><strong>Choosing the Right Mode</strong>: Decision framework for when to use skills, sub-agents, or agent teams in your pipelines</li>
+      </ul>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>A complete <strong>engineering-workflow</strong> plugin containing:</p>
+
+    <h3>4 Skills (Release Pipeline)</h3>
+
+    <ol>
+      <li><strong>pr-reviewer</strong> &mdash; Reviews PRs with structured feedback across 5 dimensions</li>
+      <li><strong>changelog-updater</strong> &mdash; Updates CHANGELOG.md following Keep a Changelog format</li>
+      <li><strong>release-manager</strong> &mdash; Orchestrates version bump, changelog finalization, tag, and release notes</li>
+      <li><strong>docs-generator</strong> &mdash; Generates API documentation from source code</li>
+    </ol>
+
+    <h3>2 Agents (Monitoring and Quality)</h3>
+
+    <ol>
+      <li><strong>ci-monitor</strong> &mdash; Checks CI status, open PRs, and recent workflow runs (uses Haiku for speed)</li>
+      <li><strong>quality-gate</strong> &mdash; Meta-reviewer that validates other skills&rsquo; output (uses Sonnet with persistent memory)</li>
+    </ol>
+
+    <h3>2 Hooks (Automated Quality)</h3>
+
+    <ol>
+      <li><strong>auto-format.sh</strong> &mdash; PostToolUse hook that formats files on every Edit/Write</li>
+      <li><strong>verify-completion.sh</strong> &mdash; TaskCompleted hook that blocks incomplete work</li>
+    </ol>
+
+    <p>Plus a <strong>workflow-runner.sh</strong> tmux script that launches the monitoring environment.</p>
+
+    <div class="callout info">
+      <p><strong>The capstone pattern:</strong> skills compose into pipelines, agents provide monitoring and quality gates, hooks enforce standards automatically, and tmux scripts orchestrate the whole thing.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Explore the Plugin Structure</span>
+      <div class="step-content">
+        <p>Start by understanding what&rsquo;s in the <code>engineering-workflow/</code> directory:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>find courses/course-11-capstone/engineering-workflow -type f | sort</div>
+
+        <p>You should see:</p>
+
+        <div class="file-tree">.claude-plugin/plugin.json
+agents/ci-monitor.md
+agents/quality-gate.md
+hooks/hooks.json
+hooks/scripts/auto-format.sh
+hooks/scripts/verify-completion.sh
+skills/changelog-updater/SKILL.md
+skills/docs-generator/SKILL.md
+skills/pr-reviewer/SKILL.md
+skills/release-manager/SKILL.md</div>
+
+        <p>Read the <code>plugin.json</code> to see the manifest. Read each skill&rsquo;s frontmatter to see how they&rsquo;re configured. Read the agents to see their tool restrictions and model choices.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Test the Plugin Locally</span>
+      <div class="step-content">
+        <p>Load the plugin with <code>--plugin-dir</code>:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>claude --plugin-dir ./courses/course-11-capstone/engineering-workflow</div>
+
+        <p>Verify all components are available:</p>
+
+        <ol>
+          <li>Run <code>/help</code> and look for commands under the <code>engineering-workflow</code> namespace</li>
+          <li>Run <code>/agents</code> and check that <code>ci-monitor</code> and <code>quality-gate</code> appear</li>
+        </ol>
+
+        <p>You should see:</p>
+
+        <ul>
+          <li><code>/engineering-workflow:pr-reviewer</code></li>
+          <li><code>/engineering-workflow:changelog-updater</code></li>
+          <li><code>/engineering-workflow:release-manager</code></li>
+          <li><code>/engineering-workflow:docs-generator</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Test the Skill Pipeline</span>
+      <div class="step-content">
+        <p>Navigate to a project with git history (or create a test project). Run the skills in pipeline order:</p>
+
+        <p><strong>3a. Run the PR reviewer:</strong></p>
+
+        <div class="prompt-box-dark">/engineering-workflow:pr-reviewer</div>
+
+        <p>This generates <code>PR-REVIEW.md</code> with structured feedback. Read it:</p>
+
+        <div class="prompt-box-dark">Read PR-REVIEW.md</div>
+
+        <p><strong>3b. Run the changelog updater:</strong></p>
+
+        <div class="prompt-box-dark">/engineering-workflow:changelog-updater</div>
+
+        <p>It reads <code>PR-REVIEW.md</code> (if present) for context, then scans git history and produces changelog entries in <code>CHANGELOG.md</code>.</p>
+
+        <p><strong>3c. Run the release manager:</strong></p>
+
+        <div class="prompt-box-dark">/engineering-workflow:release-manager patch</div>
+
+        <p>It reads <code>CHANGELOG.md</code>, bumps the version, finalizes the changelog entry with today&rsquo;s date, creates <code>RELEASE_NOTES.md</code>, and makes a tagged commit.</p>
+
+        <p><strong>3d. Run the docs generator:</strong></p>
+
+        <div class="prompt-box-dark">/engineering-workflow:docs-generator</div>
+
+        <p>It scans source code and produces <code>API.md</code>.</p>
+
+        <p>Observe how each skill&rsquo;s output feeds into the next. The pipeline works because each skill reads and writes standard project files.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Test the Hooks</span>
+      <div class="step-content">
+        <p>The plugin&rsquo;s hooks run automatically when it&rsquo;s loaded.</p>
+
+        <p><strong>4a. Test auto-format:</strong></p>
+
+        <p>Make a code change (stage a file or ask Claude to edit one). After the Edit or Write tool completes, the <code>auto-format.sh</code> hook runs. If the project has prettier, black, rustfmt, or gofmt installed, the file is formatted automatically.</p>
+
+        <p>To verify: make an intentionally poorly-formatted change and check that it&rsquo;s reformatted after Claude writes it.</p>
+
+        <p><strong>4b. Test verify-completion:</strong></p>
+
+        <p>If you&rsquo;re using task lists (from Course 10&rsquo;s agent teams or standalone), try marking a task as completed. The <code>verify-completion.sh</code> hook checks:</p>
+
+        <ul>
+          <li>Test suite passes</li>
+          <li>Lint passes (if configured)</li>
+          <li>No merge conflict markers in tracked files</li>
+        </ul>
+
+        <p>If any check fails, the task completion is blocked and the agent receives feedback about what to fix.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Test the Agents</span>
+      <div class="step-content">
+        <p><strong>5a. CI monitor:</strong></p>
+
+        <div class="prompt-box-dark">Use the ci-monitor agent to check the current CI status</div>
+
+        <p>The agent uses Haiku (fast and cheap) and is restricted to git and gh commands plus read-only tools. It reports open PRs, recent workflow runs, and flags any issues.</p>
+
+        <p><strong>5b. Quality gate:</strong></p>
+
+        <p>After running the skill pipeline (Step 3), invoke the quality gate:</p>
+
+        <div class="prompt-box-dark">Use the quality-gate agent to review the artifacts in this project</div>
+
+        <p>The agent uses Sonnet (deeper reasoning), checks <code>PR-REVIEW.md</code>, <code>CHANGELOG.md</code>, <code>RELEASE_NOTES.md</code>, and <code>API.md</code>, runs the test suite, and produces a quality report. It also updates its project-level memory with what it learned.</p>
+
+        <p>Run it again later. It should reference findings from its first run.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Run the Workflow Monitoring Environment</span>
+      <div class="step-content">
+        <p>Make the script executable and run it:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>chmod +x courses/course-11-capstone/scripts/workflow-runner.sh
+<span class="prompt">$ </span>./courses/course-11-capstone/scripts/workflow-runner.sh</div>
+
+        <p>This creates a tmux dashboard showing:</p>
+
+        <ul>
+          <li><strong>Top-left</strong>: CI monitor agent output (live-tailing)</li>
+          <li><strong>Top-right</strong>: Quality gate agent output (live-tailing)</li>
+          <li><strong>Bottom</strong>: Command center with quick-reference commands</li>
+        </ul>
+
+        <p>From the command center, you can:</p>
+
+        <ul>
+          <li>Attach to either agent&rsquo;s session for direct interaction</li>
+          <li>Capture logs to files for review</li>
+          <li>Use <code>tmux display-popup</code> for quick AI questions without leaving the dashboard</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Try the Popup Pattern</span>
+      <div class="step-content">
+        <p>From within the dashboard&rsquo;s command center pane, open a quick AI popup:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>tmux display-popup -w 80% -h 80% -E 'claude -p "Explain what a quality gate agent does in 3 sentences"'</div>
+
+        <p>The popup floats over the dashboard, shows the response, and closes when done. Your dashboard panes are undisturbed.</p>
+
+        <p>This is useful during monitoring: if you see a test failure in the quality gate output, pop up a quick explanation without navigating away.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">8</span>
+      <span class="step-title">Install the Plugin for Real Use</span>
+      <div class="step-content">
+        <p><strong>Option A: Personal installation</strong> (available in all your projects):</p>
+
+        <div class="terminal-block"><span class="comment"># Copy the plugin directory</span>
+<span class="prompt">$ </span>cp -r courses/course-11-capstone/engineering-workflow ~/.claude/plugins/engineering-workflow
+
+<span class="comment"># Or use --plugin-dir in your shell profile</span>
+<span class="prompt">$ </span>echo 'alias claude-ew="claude --plugin-dir ~/path/to/engineering-workflow"' &gt;&gt; ~/.zshrc</div>
+
+        <p><strong>Option B: Project installation</strong> (available to your team):</p>
+
+        <div class="terminal-block"><span class="comment"># Copy into the project's plugin directory</span>
+<span class="prompt">$ </span>cp -r courses/course-11-capstone/engineering-workflow .claude/plugins/engineering-workflow
+<span class="comment"># Commit to version control so teammates get it too</span></div>
+
+        <p><strong>Option C: Marketplace distribution</strong> (for broader sharing):</p>
+
+        <p>Create a marketplace repository, add the plugin, and teammates install with:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>claude plugin install engineering-workflow@your-marketplace</div>
+
+        <p>Start a new Claude Code session and verify:</p>
+
+        <ul>
+          <li><code>/help</code> shows the engineering-workflow commands</li>
+          <li><code>/agents</code> shows ci-monitor and quality-gate</li>
+          <li>Running <code>/engineering-workflow:pr-reviewer</code> works without <code>--plugin-dir</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li>
+        <p><strong>Install and compose</strong></p>
+        <p>Load the engineering-workflow plugin with <code>--plugin-dir</code>. Navigate to a project with git history. Run <code>/engineering-workflow:pr-reviewer</code> and <code>/engineering-workflow:changelog-updater</code> in sequence. Verify the changelog updater references findings from the PR review. Then run <code>/engineering-workflow:docs-generator</code>. Confirm that all four skills produce their respective artifacts.</p>
+      </li>
+      <li>
+        <p><strong>Test the hooks</strong></p>
+        <p>With the plugin loaded, make a code change in a JavaScript or Python project. Verify <code>auto-format.sh</code> runs after the file is written (check the formatting). Then, if using task lists, try to complete a task while the test suite is failing. Verify <code>verify-completion.sh</code> blocks completion. Fix the tests and confirm the task can then complete.</p>
+      </li>
+      <li>
+        <p><strong>Full orchestration</strong></p>
+        <p>Run <code>workflow-runner.sh</code> to launch the monitoring environment. Watch the CI monitor and quality gate in the dashboard. While monitoring, run the skill pipeline in a separate tmux session (or attach to the quality gate session). Use <code>tmux display-popup</code> from the command center for a quick question. Capture logs from both sessions when done.</p>
+      </li>
+      <li>
+        <p><strong>Package and distribute</strong></p>
+        <p>Copy the <code>engineering-workflow/</code> directory to a new location. Install it as a plugin in a different project (using <code>--plugin-dir</code> or by placing it in <code>.claude/plugins/</code>). Verify all 4 skills and 2 agents are available. Run the PR reviewer and confirm it works in the new context. This validates that the plugin is self-contained and portable.</p>
+      </li>
+    </ol>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>engineering-workflow/.claude-plugin/plugin.json</code> is valid JSON with name, version, description</li>
+      <li>All 4 skills appear when loading the plugin (<code>/help</code> shows them under the namespace)</li>
+      <li>Both agents appear in <code>/agents</code></li>
+      <li><code>/engineering-workflow:pr-reviewer</code> produces <code>PR-REVIEW.md</code> with structured findings</li>
+      <li><code>/engineering-workflow:changelog-updater</code> produces formatted <code>CHANGELOG.md</code> entries</li>
+      <li>The changelog updater uses <code>PR-REVIEW.md</code> context when available</li>
+      <li><code>/engineering-workflow:release-manager patch</code> bumps version, finalizes changelog, creates tag</li>
+      <li><code>/engineering-workflow:docs-generator</code> produces <code>API.md</code> from source code</li>
+      <li><code>auto-format.sh</code> runs after Edit/Write and formats the file</li>
+      <li><code>verify-completion.sh</code> blocks task completion when tests fail</li>
+      <li><code>verify-completion.sh</code> allows completion when tests pass</li>
+      <li>The ci-monitor agent uses Haiku and reports CI status</li>
+      <li>The quality-gate agent uses Sonnet and produces a quality report</li>
+      <li>The quality-gate agent updates its memory between runs</li>
+      <li><code>workflow-runner.sh</code> creates the monitoring dashboard with live-tailing</li>
+      <li>The plugin works when installed via <code>--plugin-dir</code> in a different project</li>
+      <li><code>tmux display-popup</code> works for quick AI interactions from the dashboard</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>Congratulations &mdash; you&rsquo;ve completed the entire curriculum.</strong> You now know how to:</p>
+      <ul>
+        <li><strong>Build skills</strong> from simple instructions to multi-step workflows with validation gates</li>
+        <li><strong>Write hooks</strong> that enforce quality standards automatically</li>
+        <li><strong>Configure subagents</strong> with tool restrictions, model selection, and persistent memory</li>
+        <li><strong>Orchestrate agent teams</strong> with shared tasks, messaging, and delegate mode</li>
+        <li><strong>Monitor and manage</strong> agents through tmux dashboards and session scripts</li>
+        <li><strong>Package everything</strong> as a distributable plugin</li>
+      </ul>
+      <p>From here, consider: build your own workflow plugin tailored to your team&rsquo;s process, contribute to plugin marketplaces to share your tools with the community, and combine patterns from across the curriculum in new ways &mdash; the skills, agents, hooks, and orchestration patterns are building blocks for whatever workflow you need.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-10-agent-teams.html" class="prev">Agent Teams</a>
+      <span></span>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html" class="current">11. Capstone</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
