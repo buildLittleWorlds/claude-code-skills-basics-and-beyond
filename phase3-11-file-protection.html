@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Protection Hook — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 3: Task Workflow Mastery</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <h1 class="page-title">File Protection Hook</h1>
+
+    <div class="course-meta">
+      <span class="meta-pill">Lesson <strong>11</strong> of 15</span>
+      <span class="meta-pill"><strong>Intermediate&ndash;Advanced</strong></span>
+      <span class="meta-pill">20 min</span>
+    </div>
+
+    <p class="lead">The compound-reminder is reactive (reminds <em>after</em>). This hook is <strong>proactive</strong> &mdash; it intercepts Edit and Write tool calls <em>before</em> they execute, blocking edits to log and archive files to protect the audit trail.</p>
+
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <a href="phase3-10-compound-reminder.html">Lesson 10</a> (Stop hook, settings configuration)</li>
+        <li>Completed <strong>Phase 2 Course 7</strong> (PreToolUse hooks, matchers, JSON stdin, <code>jq</code>)</li>
+        <li><code>jq</code> installed</li>
+      </ul>
+    </div>
+
+    <h2>PreToolUse vs Stop</h2>
+
+    <table class="tool-table">
+      <thead>
+        <tr><th>Aspect</th><th>Stop (Lesson 10)</th><th>PreToolUse (This lesson)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>When</td><td>After Claude responds</td><td>Before a tool executes</td></tr>
+        <tr><td>Can block</td><td>The end of a turn (exit 2 = feedback)</td><td>The tool call itself (exit 2 = blocked)</td></tr>
+        <tr><td>Input</td><td>None (no stdin)</td><td>JSON with tool name and parameters</td></tr>
+        <tr><td>Matcher</td><td>No matcher (fires on every Stop)</td><td>Matches on tool name (<code>Edit|Write</code>)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>JSON Input Format</h3>
+
+    <div class="yaml-block">{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/Users/you/work/_tasks/log/2026-02-21.md",
+    "old_string": "...",
+    "new_string": "..."
+  }
+}</div>
+
+    <p>The hook extracts <code>file_path</code> with <code>jq</code>, checks if it&rsquo;s a protected path, and either allows (exit 0) or blocks (exit 2 + error on stderr).</p>
+
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Install the hook</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>cp courses/phase3/lesson-11-file-protection/hooks/protect-task-files.sh ~/.claude/hooks/
+<span class="prompt">$ </span>chmod +x ~/.claude/hooks/protect-task-files.sh</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Update settings.json</span>
+      <div class="step-content">
+        <p>Add the PreToolUse hook alongside the existing Stop hook:</p>
+        <div class="yaml-block">{
+  "hooks": {
+    "Stop": [ ... ],
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "bash ~/.claude/hooks/protect-task-files.sh",
+        "matcher": "Edit|Write"
+      }
+    ]
+  }
+}</div>
+        <p>The <code>matcher</code> ensures the hook only fires for Edit and Write &mdash; not Read, Glob, Grep, or Bash.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Test &mdash; block a log file edit</span>
+      <div class="step-content">
+        <p>Ask Claude to edit a log file. The hook should block it with a specific error message explaining to use <code>/done</code> for log entries.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Test &mdash; allow a pending file edit</span>
+      <div class="step-content">
+        <p>Ask Claude to change a priority in a pending file. This should succeed &mdash; pending files are not protected.</p>
+      </div>
+    </div>
+
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li>Editing a log file is blocked with a clear error message</li>
+      <li>Editing an archive file is blocked with a clear error message</li>
+      <li>Editing a pending file is allowed</li>
+      <li>Reading log/archive files is allowed (hook doesn&rsquo;t fire on Read)</li>
+      <li>Error messages suggest the correct alternative (<code>/done</code> or move to pending)</li>
+      <li>Both hooks coexist in <code>settings.json</code></li>
+    </ul>
+
+    <h2>Design Rationale</h2>
+
+    <p><strong>Why specific error messages?</strong> A generic &ldquo;permission denied&rdquo; doesn&rsquo;t help. A message like &ldquo;Use <code>/done</code> to create log entries&rdquo; teaches the workflow &mdash; the hook is a guardrail <em>and</em> a guide.</p>
+
+    <p><strong>Why protect archive but not inbox?</strong> Inbox and pending are actively managed. Archive is the historical record; log is the audit trail. Both should be immutable once written.</p>
+
+    <div class="callout insight">
+      <p><strong>Phase 2 Callback:</strong> Course 7 (Hooks): PreToolUse event, <code>Edit|Write</code> matcher, JSON stdin with <code>jq</code>, exit code 2 for blocking with feedback. Same pattern as Course 7&rsquo;s <code>protect-files.sh</code> example.</p>
+    </div>
+
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> Both hooks are installed. <a href="phase3-12-cockpit-layout.html">Lesson 12: Cockpit Layout</a> builds the full 4-pane HQ with inline watchers, a custom status bar, and the enhanced startup script.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <nav class="page-nav">
+      <a href="phase3-10-compound-reminder.html" class="prev">Compound Reminder</a>
+      <a href="phase3-12-cockpit-layout.html" class="next">Cockpit Layout</a>
+    </nav>
+
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html" class="current">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

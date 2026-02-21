@@ -33,7 +33,7 @@
     <h1 class="page-title">Curriculum Overview</h1>
 
     <!-- LEAD PARAGRAPH -->
-    <p class="lead">This site is a reading companion for the Claude Code Skills curriculum &mdash; twelve lessons that teach you to build skills, hooks, custom subagents, agent teams, and automated workflows. Each page transforms a <code>lesson.md</code> source file into a browsable reference with syntax-highlighted code blocks, step-by-step walkthroughs, and copy-ready terminal commands. Follow the sequence from Course 1 through the Capstone, or jump directly to the topic you need.</p>
+    <p class="lead">This site is a reading companion for the Claude Code Skills curriculum &mdash; twenty-six lessons across three phases that teach you to build skills, hooks, custom subagents, agent teams, and a complete task-management cockpit. Each page transforms a <code>lesson.md</code> source file into a browsable reference with syntax-highlighted code blocks, step-by-step walkthroughs, and copy-ready terminal commands. Follow the sequence from Course 1 through the Daily Rhythm, or jump directly to the topic you need.</p>
 
     <!-- HOW IT WORKS -->
     <h2>How It Works</h2>
@@ -52,8 +52,8 @@
         <p>Courses progress from beginner (a single SKILL.md file) through intermediate (hooks, testing, workflows) to advanced (subagents, agent teams, a full plugin).</p>
       </div>
       <div class="card">
-        <h3>Two Phases</h3>
-        <p><strong>Phase 1</strong> covers skills fundamentals in a single terminal. <strong>Phase 2</strong> adds tmux, subagents, and multi-agent orchestration. A bridge course connects them.</p>
+        <h3>Three Phases</h3>
+        <p><strong>Phase 1</strong> covers skills fundamentals in a single terminal. <strong>Phase 2</strong> adds tmux, subagents, and multi-agent orchestration. <strong>Phase 3</strong> builds a complete task-management cockpit with six skills, two hooks, and a one-command launch.</p>
       </div>
     </div>
 
@@ -147,6 +147,91 @@
 
     <div class="divider"></div>
 
+    <!-- PHASE 3: TASK WORKFLOW MASTERY -->
+    <h2>Phase 3: Task Workflow Mastery</h2>
+
+    <p>Fifteen lessons that build a complete task-management cockpit from scratch &mdash; six skills, two hooks, a startup script, and a tmux layout that launches with one command. Every pattern from Phases 1 and 2 comes together here.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 20 min</p>
+        <p>Use <code>tmux send-keys -t</code> addressing to control panes you are not focused on. Build a 3-window task layout.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-02-capture-pane.html">2. Capture Pane</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 20 min</p>
+        <p>Read output from non-focused panes with <code>capture-pane</code>. Build monitoring one-liners that watch Claude&rsquo;s activity.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 20 min</p>
+        <p>Manage dual sessions (<code>tasks</code> + <code>coding</code>) with rapid switching. Practice the rhythm the cockpit automates later.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-04-next-skill.html">4. /next Skill</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 25 min</p>
+        <p>Build your first task skill. Reads pending tasks, sorts by due date, and displays a formatted queue.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-05-done-skill.html">5. /done Skill</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 30 min</p>
+        <p>Complete tasks with <code>$ARGUMENTS</code>: move to archive, append log entry, show a floating <code>display-popup</code> confirmation.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-06-triage-skill.html">6. /triage Skill</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 30 min</p>
+        <p>Process inbox items with dynamic context and reference-file routing rules. Classify, tag, and route to pending.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-07-startup-script.html">7. Startup Script</a></h3>
+        <p class="course-card-meta">Intermediate &middot; 25 min</p>
+        <p>Write a <code>~/bin/tasks</code> script that launches the cockpit &mdash; three windows, reattach guard, and auto-briefing.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-08-today-skill.html">8. /today Skill</a></h3>
+        <p class="course-card-meta">Intermediate-Advanced &middot; 25 min</p>
+        <p>Morning briefing in a forked Explore agent: overdue items, due today, coming this week, and suggested focus.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></h3>
+        <p class="course-card-meta">Intermediate-Advanced &middot; 25 min</p>
+        <p>Four-tier escalation rules from gentle reminder to blocking popup. Teach Claude to nag proportionally.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></h3>
+        <p class="course-card-meta">Intermediate-Advanced &middot; 25 min</p>
+        <p>A <code>Stop</code> hook that checks whether MEMORY.md was updated after completing a task. Includes the infinite-loop guard.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-11-file-protection.html">11. File Protection</a></h3>
+        <p class="course-card-meta">Intermediate-Advanced &middot; 20 min</p>
+        <p>A <code>PreToolUse</code> hook that blocks edits to log and archive files, directing users to <code>/done</code> instead.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></h3>
+        <p class="course-card-meta">Advanced &middot; 30 min</p>
+        <p>Assemble the full 4-pane HQ: Claude, shell, inbox watcher, and pending/overdue dashboard with a custom status bar.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></h3>
+        <p class="course-card-meta">Advanced &middot; 20 min</p>
+        <p>Integration test: add freelance and personal tasks, then verify the entire pipeline generalizes beyond seed data.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-14-session-summary.html">14. Session Summary</a></h3>
+        <p class="course-card-meta">Advanced &middot; 20 min</p>
+        <p>Build <code>/session-summary</code> to close the daily loop: tasks completed, decisions made, and focus for tomorrow.</p>
+      </div>
+      <div class="card">
+        <h3><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></h3>
+        <p class="course-card-meta">Advanced &middot; 30 min</p>
+        <p>The complete integration test. Every skill, hook, and tmux pattern verified end-to-end with a test script.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
     <!-- GETTING STARTED -->
     <h2>Getting Started</h2>
 
@@ -193,6 +278,24 @@
         <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
         <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
         <li><a href="course-11-capstone.html">11. Capstone</a></li>
+
+        <!-- Phase 3: Task Workflow Mastery -->
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
       </ul>
     </nav>
 

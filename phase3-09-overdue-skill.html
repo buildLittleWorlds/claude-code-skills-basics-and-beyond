@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>/overdue Skill — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 3: Task Workflow Mastery</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <h1 class="page-title"><code>/overdue</code> Escalation Rules</h1>
+
+    <div class="course-meta">
+      <span class="meta-pill">Lesson <strong>9</strong> of 15</span>
+      <span class="meta-pill"><strong>Intermediate&ndash;Advanced</strong></span>
+      <span class="meta-pill">25 min</span>
+    </div>
+
+    <p class="lead"><code>/overdue</code> implements a 4-tier escalation model: the longer you ignore a task, the louder the system gets. Tier 3+ tasks trigger <strong><code>display-popup</code></strong> overlays that demand a decision &mdash; the first skill where tmux and Claude interact during execution.</p>
+
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <a href="phase3-08-today-skill.html">Lessons 4&ndash;8</a> (all skills + startup script)</li>
+        <li>Completed <strong>Phase 2 Course 3</strong> (reference files)</li>
+        <li>Pending tasks with at least 1&ndash;2 past-due dates</li>
+      </ul>
+    </div>
+
+    <h2>The 4-Tier Escalation Model</h2>
+
+    <table class="tool-table">
+      <thead>
+        <tr><th>Tier</th><th>Days Overdue</th><th>Response</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>1&ndash;3</td><td>Gentle reminder (listed in report)</td></tr>
+        <tr><td>2</td><td>4&ndash;7</td><td>Highlighted with suggestion to complete or reschedule</td></tr>
+        <tr><td>3</td><td>8&ndash;14</td><td><code>display-popup</code> demanding a decision</td></tr>
+        <tr><td>4</td><td>15+</td><td>Modal popup &mdash; blocks workflow until acknowledged</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warning">
+      <p><strong>Key insight:</strong> The escalation is <strong>time-based, not priority-based</strong>. A P4 task 20 days overdue gets the same Tier 4 treatment as a P1 task. Chronic deferral is the problem being addressed, not task importance. If a task isn&rsquo;t important enough to do, it should be dropped &mdash; not left in pending forever.</p>
+    </div>
+
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Read the skill and reference</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>cat courses/phase3/lesson-09-overdue-skill/skill/overdue/SKILL.md
+<span class="prompt">$ </span>cat courses/phase3/lesson-09-overdue-skill/skill/overdue/references/escalation-rules.md</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Install the skill</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>mkdir -p ~/.claude/skills/overdue/references
+<span class="prompt">$ </span>cp courses/phase3/lesson-09-overdue-skill/skill/overdue/SKILL.md ~/.claude/skills/overdue/SKILL.md
+<span class="prompt">$ </span>cp courses/phase3/lesson-09-overdue-skill/skill/overdue/references/escalation-rules.md ~/.claude/skills/overdue/references/</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Run the overdue check</span>
+      <div class="step-content">
+        <div class="terminal-block">/overdue</div>
+        <p>Claude reads pending tasks, calculates days overdue, groups by tier, displays the report, and shows a <code>display-popup</code> for any Tier 3+ tasks. Press <code>q</code> to dismiss the popup.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Try a modal popup manually</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>tmux display-popup -w 60 -h 10 "echo 'DECISION REQUIRED'; echo ''; echo 'Task: Fix API timeout'; echo 'Overdue: 7 days (Tier 3)'; echo ''; echo 'Press q to dismiss'; read"</div>
+        <p>This popup blocks input until dismissed &mdash; that&rsquo;s the point for Tier 3+ tasks.</p>
+      </div>
+    </div>
+
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>/overdue</code> displays a tiered report of overdue tasks</li>
+      <li>Tasks are correctly assigned to tiers based on days overdue</li>
+      <li>Tier 3+ tasks trigger a <code>display-popup</code> with decision options</li>
+      <li>The popup is modal (doesn&rsquo;t auto-close)</li>
+      <li>No files are modified (read-only)</li>
+      <li>&ldquo;No overdue tasks&rdquo; message appears when all tasks are current</li>
+    </ul>
+
+    <h2>Design Rationale</h2>
+
+    <p><strong>Why reference files?</strong> The escalation model is a tunable policy. Maybe Tier 3 should start at 10 days. With rules in a reference file, you edit one file and behavior changes.</p>
+
+    <p><strong>Why not auto-reschedule?</strong> Automation should inform and prompt, not decide. A 20-day-overdue task might be worth doing or worth dropping. Only you know.</p>
+
+    <div class="callout insight">
+      <p><strong>Phase 2 Callback:</strong> Course 3 (<code>references/escalation-rules.md</code>), Course 5 (<code>!`command`</code> preprocessing). Lesson 5 introduced <code>display-popup</code> as a 3-second confirmation; <code>/overdue</code> uses it as a modal for forced engagement.</p>
+    </div>
+
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> All 5 core skills are built. <strong>Challenge Lab 1</strong> is your first unguided exercise: build a <code>/focus</code> skill. After that, <a href="phase3-10-compound-reminder.html">Lesson 10: Compound Reminder</a> begins the hooks phase.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <nav class="page-nav">
+      <a href="phase3-08-today-skill.html" class="prev">/today Skill</a>
+      <a href="phase3-10-compound-reminder.html" class="next">Compound Reminder</a>
+    </nav>
+
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html" class="current">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

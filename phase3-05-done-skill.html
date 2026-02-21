@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>/done Skill — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 3: Task Workflow Mastery</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <h1 class="page-title"><code>/done</code> with Arguments</h1>
+
+    <div class="course-meta">
+      <span class="meta-pill">Lesson <strong>5</strong> of 15</span>
+      <span class="meta-pill"><strong>Intermediate</strong></span>
+      <span class="meta-pill">30 min</span>
+    </div>
+
+    <p class="lead"><code>/done</code> closes the task loop: it marks a task as completed, moves it to the archive, logs the completion, and shows a floating popup. This skill introduces <strong><code>$ARGUMENTS</code></strong> for parameterized input and <strong><code>display-popup</code></strong> for tmux overlay confirmations.</p>
+
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <a href="phase3-04-next-skill.html">Lesson 4</a> (<code>/next</code> skill installed and working)</li>
+        <li>Completed <strong>Phase 2 Course 5</strong> (arguments, <code>$ARGUMENTS</code>, <code>argument-hint</code>)</li>
+        <li>Completed <strong>Phase 2 Course 6</strong> (multi-step workflows, validation gates)</li>
+      </ul>
+    </div>
+
+    <h2>New Concepts</h2>
+
+    <h3>Comparing <code>/next</code> and <code>/done</code></h3>
+
+    <table class="tool-table">
+      <thead>
+        <tr><th>Feature</th><th><code>/next</code></th><th><code>/done</code></th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Arguments</td><td>None</td><td><code>$0</code> keyword + remaining text as summary</td></tr>
+        <tr><td><code>argument-hint</code></td><td>None</td><td><code>[task-keyword] [completion summary]</code></td></tr>
+        <tr><td>Workflow steps</td><td>1 (read + display)</td><td>7 (find &rarr; confirm &rarr; update &rarr; move &rarr; log &rarr; popup &rarr; suggest)</td></tr>
+        <tr><td>File modifications</td><td>None</td><td>Moves file, edits frontmatter, appends to log</td></tr>
+        <tr><td>User confirmation</td><td>None</td><td>Explicit y/n before changes</td></tr>
+      </tbody>
+    </table>
+
+    <h3>The <code>display-popup</code> Command</h3>
+
+    <div class="terminal-block"><span class="prompt">$ </span>tmux display-popup -d &lt;seconds&gt; -w &lt;width&gt; -h &lt;height&gt; "&lt;command&gt;"</div>
+
+    <p>The popup floats in the center of the current pane. With <code>-d 3</code>, it auto-closes after 3 seconds. This is the same mechanism that <code>/overdue</code> (Lesson 9) uses for its Tier 3 escalation popup.</p>
+
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Read and install the skill</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>cat courses/phase3/lesson-05-done-skill/skill/done/SKILL.md
+<span class="prompt">$ </span>mkdir -p ~/.claude/skills/done
+<span class="prompt">$ </span>cp courses/phase3/lesson-05-done-skill/skill/done/SKILL.md ~/.claude/skills/done/SKILL.md</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Complete a task with full arguments</span>
+      <div class="step-content">
+        <div class="terminal-block">/done fix-api-timeout Reduced default page size to 100 and added cursor-based pagination</div>
+        <p>Claude finds the task, shows a confirmation, waits for your &ldquo;yes,&rdquo; then moves the file, creates a log entry, and shows a floating popup.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Validate the completion</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>bash courses/phase3/lesson-05-done-skill/skill/done/scripts/validate-done.sh fix-api-timeout.md</div>
+        <p>You should see 6 green checkmarks verifying the file move, archive status, and log entry.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Test edge cases</span>
+      <div class="step-content">
+        <p>Test without a summary (<code>/done wiki</code> &mdash; Claude asks for one). Test with a non-matching keyword (<code>/done nonexistent-task</code> &mdash; helpful error). Test with an ambiguous keyword (<code>/done plan</code> &mdash; multiple matches listed).</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Try display-popup manually</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>tmux display-popup -d 3 -w 40 -h 5 "echo '&check; Task completed!'"</div>
+        <p>A floating box appears for 3 seconds and vanishes. This is what the skill triggers.</p>
+      </div>
+    </div>
+
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>/done fix-api-timeout &lt;summary&gt;</code> finds the task, confirms, moves to archive, and logs</li>
+      <li><code>validate-done.sh</code> passes all 6 checks</li>
+      <li><code>/done wiki</code> (no summary) prompts for a completion summary</li>
+      <li><code>/done nonexistent</code> returns a helpful &ldquo;not found&rdquo; message</li>
+      <li><code>/next</code> shows the updated list with completed tasks removed</li>
+      <li><code>tmux display-popup</code> shows a floating overlay that auto-closes</li>
+      <li>Today&rsquo;s log file contains entries for each completed task</li>
+    </ul>
+
+    <h2>Design Rationale</h2>
+
+    <p><strong>Why require confirmation?</strong> Destructive-ish operations (moving files, appending logs) should have a gate. If the keyword matched the wrong task, you want to catch it before the move happens. This is the &ldquo;validation gate&rdquo; pattern from Phase 2 Course 6.</p>
+
+    <p><strong>Why append-only logs?</strong> The log directory is an audit trail. You never edit past entries. The <code>/session-summary</code> skill (Lesson 14) reads these logs to produce end-of-day reports.</p>
+
+    <div class="callout insight">
+      <p><strong>Phase 2 Callback:</strong> Course 5 (<code>$ARGUMENTS</code>, <code>argument-hint</code>), Course 6 (sequential workflows with validation gates), Course 3 (<code>scripts/validate-done.sh</code> in the skill&rsquo;s <code>scripts/</code> directory).</p>
+    </div>
+
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> <a href="phase3-06-triage-skill.html">Lesson 6: /triage Skill</a> introduces dynamic context injection (<code>!`command`</code>) and reference files to process inbox items into classified pending tasks.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <nav class="page-nav">
+      <a href="phase3-04-next-skill.html" class="prev">/next Skill</a>
+      <a href="phase3-06-triage-skill.html" class="next">/triage Skill</a>
+    </nav>
+
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html" class="current">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cockpit Layout — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 3: Task Workflow Mastery</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <h1 class="page-title">The Cockpit Layout</h1>
+
+    <div class="course-meta">
+      <span class="meta-pill">Lesson <strong>12</strong> of 15</span>
+      <span class="meta-pill"><strong>Advanced</strong></span>
+      <span class="meta-pill">30 min</span>
+    </div>
+
+    <p class="lead">Upgrade from the 3-window layout to a <strong>single HQ window with 4 panes</strong> and a <strong>custom status bar</strong>. Everything visible at once: Claude, shell, inbox watcher, pending watcher, and live task counts.</p>
+
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <a href="phase3-11-file-protection.html">Lessons 7&ndash;11</a> (startup script v1, all skills, both hooks)</li>
+        <li>Completed <strong>Phase 1 Lessons 3, 6</strong> (pane splits, window management)</li>
+      </ul>
+    </div>
+
+    <h2>The 4-Pane Layout</h2>
+
+    <div class="file-tree">┌─────────────────────────┬──────────────────┐
+│                         │                  │
+│  Claude Code (pane 0)   │  Shell (pane 2)  │
+│                         │                  │
+├────────────┬────────────┴──────────────────┤
+│  Inbox     │  Pending                      │
+│  watcher   │  watcher                      │
+│  (pane 1)  │  (pane 3)                     │
+└────────────┴───────────────────────────────┘
+  Status bar: 📬 3 | 📋 8 | ⚠️ 2 | 14:30</div>
+
+    <h3>Layout Build Sequence</h3>
+
+    <ol>
+      <li>Split horizontally (top/bottom, 70/30)</li>
+      <li>Split top vertically (left/right, 60/40)</li>
+      <li>Split bottom vertically (left/right, 50/50)</li>
+    </ol>
+
+    <p>The order matters because pane numbering shifts with each split. The script accounts for this.</p>
+
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Read the enhanced script</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>cat courses/phase3/lesson-12-cockpit-layout/bin/tasks-v2</div>
+        <p>Compare with the v1 script: 4-pane splits with percentage sizing, embedded watchers, custom status bar with <code>#()</code> shell commands for live counts.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Install and launch</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>cp courses/phase3/lesson-12-cockpit-layout/bin/tasks-v2 ~/bin/tasks
+<span class="prompt">$ </span>chmod +x ~/bin/tasks
+<span class="prompt">$ </span>tmux kill-session -t tasks 2&gt;/dev/null
+<span class="prompt">$ </span>tasks</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Navigate panes</span>
+      <div class="step-content">
+        <div class="terminal-block">Ctrl+J ↑/↓/←/→    # Move between panes
+Ctrl+J o           # Cycle to next pane
+Ctrl+J z           # Zoom current pane to full screen (toggle)</div>
+        <p>The zoom shortcut is especially useful: zoom into Claude&rsquo;s pane for long output, then zoom back to the 4-pane view.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Test live updates</span>
+      <div class="step-content">
+        <p>Add a file from the shell pane. The inbox watcher updates within 5 seconds, and the status bar count increments within 10 seconds.</p>
+      </div>
+    </div>
+
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>tasks</code> launches a 4-pane HQ layout (Claude, shell, inbox watcher, pending watcher)</li>
+      <li>The status bar shows inbox count, pending count, overdue count, and time</li>
+      <li>Watchers refresh every 5 seconds</li>
+      <li>Status bar counts update every 10 seconds</li>
+      <li><code>Ctrl+J z</code> zooms a pane to full screen and back</li>
+      <li>Adding/removing files is reflected in watchers and status bar</li>
+      <li>Claude receives <code>/today</code> automatically after startup</li>
+    </ul>
+
+    <h2>Design Rationale</h2>
+
+    <p><strong>Why 70/30 vertical split?</strong> Claude&rsquo;s output benefits from height. Watchers are small, heads-up displays that don&rsquo;t need much space.</p>
+
+    <p><strong>Why embed watchers instead of separate windows?</strong> Window switching breaks visual continuity. With embedded watchers, you always see your task state &mdash; no switching required. The <code>Ctrl+J z</code> zoom handles cases where you need full-screen for one pane.</p>
+
+    <div class="callout insight">
+      <p><strong>Phase 1 Callback:</strong> Lesson 3 (Split Panes) for the layout sequence, Lesson 6 (Windows) for understanding the tradeoff. Every tmux concept from Phase 1 is used in this script.</p>
+    </div>
+
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> The cockpit is fully operational. <a href="phase3-13-side-gigs.html">Lesson 13: Side-Gigs Domain</a> tests the entire pipeline with a second batch of tasks to verify everything generalizes.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <nav class="page-nav">
+      <a href="phase3-11-file-protection.html" class="prev">File Protection</a>
+      <a href="phase3-13-side-gigs.html" class="next">Side-Gigs Domain</a>
+    </nav>
+
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html" class="current">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "engineering-workflow",
+  "version": "1.0.0",
+  "description": "A complete engineering workflow plugin with PR review, changelog management, release orchestration, and documentation generation. Includes CI monitoring and quality gate agents with automated formatting and completion hooks.",
+  "author": {
+    "name": "Claude Code Skills Curriculum"
+  },
+  "keywords": ["engineering", "workflow", "review", "release", "changelog", "docs"]
+}

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Side-Gigs Domain — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 3: Task Workflow Mastery</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <h1 class="page-title">Side-Gigs Domain</h1>
+
+    <div class="course-meta">
+      <span class="meta-pill">Lesson <strong>13</strong> of 15</span>
+      <span class="meta-pill"><strong>Advanced</strong></span>
+      <span class="meta-pill">20 min</span>
+    </div>
+
+    <p class="lead">No new artifacts &mdash; this is an <strong>integration test</strong>. Add freelance, content creation, and professional development tasks, then verify the entire pipeline handles them correctly.</p>
+
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <a href="phase3-12-cockpit-layout.html">Lessons 4&ndash;12</a> (all skills, hooks, and cockpit layout working)</li>
+        <li>All 5 skills installed and tested with the original seed data</li>
+      </ul>
+    </div>
+
+    <h2>What&rsquo;s Being Tested</h2>
+
+    <p>The question: does the system you built <strong>generalize</strong>, or does it only work for the specific seed data you started with?</p>
+
+    <p>The side-gigs data adds freelance (client invoicing, project deadlines), content creation (blog posts, conference talks), and professional development (memberships, portfolio updates).</p>
+
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Add the side-gigs seed data</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>cp courses/phase3/lesson-13-side-gigs/seed-tasks-sidegigs/inbox/*.md ~/work/_tasks/inbox/
+<span class="prompt">$ </span>cp courses/phase3/lesson-13-side-gigs/seed-tasks-sidegigs/pending/*.md ~/work/_tasks/pending/</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Triage new inbox items</span>
+      <div class="step-content">
+        <div class="terminal-block">/triage</div>
+        <p>Claude processes the new inbox items. Check that routing rules handle freelance and personal project tasks correctly. If something is misclassified, update <code>references/routing-rules.md</code>.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Run the full pipeline</span>
+      <div class="step-content">
+        <p>Test each skill with the expanded data set:</p>
+        <div class="terminal-block">/next                                    # Mixed data, sorted correctly?
+/done invoice-freelance Invoiced 12 hrs  # Archive, log, hooks work?
+/overdue                                 # Both domains in report?
+/today                                   # Combined briefing accurate?</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Assess and refine routing rules</span>
+      <div class="step-content">
+        <p>If any classification was wrong, edit <code>~/.claude/skills/triage/references/routing-rules.md</code>, move the misclassified item back to inbox, and re-triage. This iterative refinement is exactly how real skill development works.</p>
+      </div>
+    </div>
+
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li>Side-gigs seed data added (2 inbox + 3 pending)</li>
+      <li><code>/triage</code> correctly classifies freelance and personal project tasks</li>
+      <li><code>/next</code> shows all tasks sorted by due date</li>
+      <li><code>/done</code> works on a side-gigs task (archive, log, popup)</li>
+      <li><code>/overdue</code> includes both original and side-gigs overdue tasks</li>
+      <li><code>/today</code> briefing reflects the expanded task set</li>
+      <li>Both hooks function correctly with the new data</li>
+      <li>Watchers and status bar reflect accurate counts</li>
+    </ul>
+
+    <h2>Design Rationale</h2>
+
+    <p><strong>Why a separate lesson for integration testing?</strong> Building features in isolation is different from running them together with real-world data variety. Unit tests verify components; integration tests verify the system.</p>
+
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> <a href="phase3-14-session-summary.html">Lesson 14: Session Summary</a> builds the last skill &mdash; <code>/session-summary</code> closes the daily workflow loop by reading today&rsquo;s log entries and MEMORY.md to produce an end-of-session report.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <nav class="page-nav">
+      <a href="phase3-12-cockpit-layout.html" class="prev">Cockpit Layout</a>
+      <a href="phase3-14-session-summary.html" class="next">Session Summary</a>
+    </nav>
+
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html" class="current">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

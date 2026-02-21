@@ -1,0 +1,30 @@
+{
+  "description": "Engineering workflow hooks: auto-format on file changes, quality gate on task completion",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-format.sh",
+            "timeout": 30,
+            "statusMessage": "Auto-formatting..."
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/verify-completion.sh",
+            "timeout": 120,
+            "statusMessage": "Running quality checks..."
+          }
+        ]
+      }
+    ]
+  }
+}

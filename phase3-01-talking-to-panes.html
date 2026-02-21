@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Talking to Panes — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 3: Task Workflow Mastery</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <h1 class="page-title">Talking to Panes You Are Not In</h1>
+
+    <div class="course-meta">
+      <span class="meta-pill">Lesson <strong>1</strong> of 15</span>
+      <span class="meta-pill"><strong>Intermediate</strong></span>
+      <span class="meta-pill">20 min</span>
+    </div>
+
+    <p class="lead">Phase 3 flips the tmux pattern you learned in Phase 1. Instead of switching to a pane to interact with it, you <strong>send commands to panes you&rsquo;re not looking at</strong>. This is the <code>send-keys</code> command &mdash; the foundation of everything the cockpit automates.</p>
+
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Phase 1</strong> (tmux fundamentals: sessions, panes, windows, detach/reattach)</li>
+        <li>Completed <strong>Phase 2</strong> (Claude Code skills: Courses 1&ndash;7 + Bridge 7&frac12;)</li>
+        <li>Run <code>setup-tasks.sh</code> to bootstrap <code>~/work/_tasks/</code> with seed data</li>
+        <li>tmux running with <code>Ctrl+J</code> as prefix</li>
+      </ul>
+    </div>
+
+    <h2>Concepts</h2>
+
+    <h3>The <code>send-keys</code> Command</h3>
+
+    <div class="terminal-block"><span class="prompt">$ </span>tmux send-keys -t &lt;target&gt; "&lt;command&gt;" Enter</div>
+
+    <p>The <code>-t</code> flag is a <strong>target address</strong>. tmux addressing works like a postal system:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr><th>Address</th><th>Meaning</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>session</code></td><td>Target a session by name</td><td><code>-t tasks</code></td></tr>
+        <tr><td><code>session:window</code></td><td>Target a window by number or name</td><td><code>-t tasks:1</code></td></tr>
+        <tr><td><code>session:window.pane</code></td><td>Target a specific pane</td><td><code>-t tasks:0.1</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>Pane numbering starts at 0. In a two-pane horizontal split, pane 0 is the top (or left) and pane 1 is the bottom (or right).</p>
+
+    <h3>Why This Matters for the Cockpit</h3>
+
+    <p>The startup script you&rsquo;ll build in Lesson 7 creates a multi-window tmux session and then sends commands to specific panes &mdash; launching Claude in one, starting watchers in others, all without you manually switching to each pane.</p>
+
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Set up your task data</span>
+      <div class="step-content">
+        <p>Run the setup script if you haven&rsquo;t already:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>bash courses/phase3/setup-tasks.sh</div>
+        <p>Verify it worked:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>ls ~/work/_tasks/inbox/
+<span class="prompt">$ </span>ls ~/work/_tasks/pending/</div>
+        <p>You should see 5 files in inbox and 6 in pending.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Build a 3-window layout</span>
+      <div class="step-content">
+        <p>Create a session, rename windows, and navigate:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>tmux new -s tasks</div>
+        <p>Rename the window with <code>Ctrl+J ,</code> &rarr; type <code>hq</code>. Create a second window (<code>Ctrl+J c</code>), rename to <code>inbox</code>. Create a third, rename to <code>pending</code>. Return to HQ: <code>Ctrl+J 0</code>.</p>
+        <p>You now have three windows: <code>hq</code> (0), <code>inbox</code> (1), <code>pending</code> (2).</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Send commands to other windows</span>
+      <div class="step-content">
+        <p>From the <code>hq</code> window, send a command to <code>inbox</code> without leaving:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>tmux send-keys -t tasks:inbox "ls ~/work/_tasks/inbox/" Enter</div>
+        <p>Send another to <code>pending</code>:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>tmux send-keys -t tasks:pending "ls -lt ~/work/_tasks/pending/" Enter</div>
+        <p>Switch to each window to verify: <code>Ctrl+J 1</code>, <code>Ctrl+J 2</code>, <code>Ctrl+J 0</code>.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Target panes within a window</span>
+      <div class="step-content">
+        <p>Split the HQ window: <code>Ctrl+J %</code>. Now from the left pane, send to the right:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>tmux send-keys -t tasks:hq.1 "echo 'Hello from pane 0!'" Enter</div>
+        <p>The echo runs in the right pane. Try sending a real command:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>tmux send-keys -t tasks:hq.1 "wc -l ~/work/_tasks/pending/*.md" Enter</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Chain commands</span>
+      <div class="step-content">
+        <p>Send multiple commands in sequence:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>tmux send-keys -t tasks:inbox "echo '--- Inbox Status ---'" Enter
+<span class="prompt">$ </span>tmux send-keys -t tasks:inbox "echo 'Count:' &amp;&amp; ls ~/work/_tasks/inbox/ | wc -l" Enter
+<span class="prompt">$ </span>tmux send-keys -t tasks:inbox "echo 'Files:' &amp;&amp; ls ~/work/_tasks/inbox/" Enter</div>
+        <p>Switch to the inbox window (<code>Ctrl+J 1</code>) to see all three commands executed in order.</p>
+      </div>
+    </div>
+
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>~/work/_tasks/</code> has 4 subdirectories with seed files (5 inbox, 6 pending, 2 archive, 2 log)</li>
+      <li>You have a <code>tasks</code> session with 3 named windows (<code>hq</code>, <code>inbox</code>, <code>pending</code>)</li>
+      <li>From <code>hq</code>, you can <code>send-keys</code> to the <code>inbox</code> window and see results there</li>
+      <li>From <code>hq</code>, you can <code>send-keys</code> to a specific pane (<code>.0</code> or <code>.1</code>) within a split window</li>
+      <li>You can chain multiple <code>send-keys</code> calls to build up a command sequence in a remote pane</li>
+    </ul>
+
+    <h2>Design Rationale</h2>
+
+    <p><strong>Why <code>send-keys</code> instead of just running commands directly?</strong> Because the cockpit startup script (Lesson 7) needs to configure multiple panes from a single shell script. It can&rsquo;t &ldquo;be in&rdquo; each pane &mdash; it creates them and then talks to them remotely.</p>
+
+    <p><strong>Why named windows?</strong> Names like <code>inbox</code> and <code>pending</code> are stable addresses. Window numbers can shift if you create or destroy windows. <code>tmux send-keys -t tasks:inbox "ls" Enter</code> works regardless of window ordering.</p>
+
+    <div class="callout insight">
+      <p><strong>Phase 1 Callback:</strong> This lesson builds on Lesson 3 (Split Panes), Lesson 6 (Windows), and Lesson 9 (Headless Sessions). You learned to create panes and windows &mdash; now you&rsquo;re <em>addressing</em> them remotely.</p>
+    </div>
+
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> <a href="phase3-02-capture-pane.html">Lesson 2: Capture Pane</a> teaches the opposite of <code>send-keys</code> &mdash; <strong>reading output</strong> from panes you&rsquo;re not in. Together, send and capture are the two primitives that make the cockpit work.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <nav class="page-nav">
+      <a href="course-11-capstone.html" class="prev">Capstone</a>
+      <a href="phase3-02-capture-pane.html" class="next">Capture Pane</a>
+    </nav>
+
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html" class="current">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

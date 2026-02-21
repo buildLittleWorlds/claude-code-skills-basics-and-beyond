@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compound Reminder Hook — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 3: Task Workflow Mastery</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <h1 class="page-title">Compound Reminder Hook</h1>
+
+    <div class="course-meta">
+      <span class="meta-pill">Lesson <strong>10</strong> of 15</span>
+      <span class="meta-pill"><strong>Intermediate&ndash;Advanced</strong></span>
+      <span class="meta-pill">25 min</span>
+    </div>
+
+    <p class="lead">Skills are instructions Claude follows when it chooses to. Hooks are rules that execute automatically. This <strong>Stop event hook</strong> reminds you to update <code>MEMORY.md</code> after completing tasks &mdash; ensuring tomorrow&rsquo;s session has context.</p>
+
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <a href="phase3-09-overdue-skill.html">Lessons 4&ndash;9</a> (all skills working)</li>
+        <li>Completed <strong>Phase 2 Course 7</strong> (hooks lifecycle, exit codes, JSON I/O, <code>jq</code>)</li>
+        <li><code>jq</code> installed (<code>brew install jq</code> or <code>apt-get install jq</code>)</li>
+      </ul>
+    </div>
+
+    <h2>Concepts</h2>
+
+    <h3>The Infinite Loop Trap</h3>
+
+    <p>When a Stop hook exits with code 2 (block with feedback), Claude responds to the feedback. But responding triggers <em>another</em> Stop event, which fires the hook again, which exits 2 again&hellip;</p>
+
+    <p>The solution is the <code>stop_hook_active</code> environment variable:</p>
+
+    <div class="terminal-block">if [ "${stop_hook_active}" = "1" ]; then
+    exit 0
+fi
+export stop_hook_active=1</div>
+
+    <p>This guard ensures the hook only fires once per cycle. Without it, you get an infinite loop.</p>
+
+    <h3>Hook Logic</h3>
+
+    <ol>
+      <li><strong>Guard</strong>: Check <code>stop_hook_active</code> &mdash; exit immediately if already fired</li>
+      <li><strong>Archive check</strong>: Use <code>find -mmin -10</code> to detect recently completed tasks</li>
+      <li><strong>MEMORY.md check</strong>: Was <code>~/MEMORY.md</code> updated in the last 10 minutes?</li>
+      <li><strong>Decision</strong>: If archives changed but MEMORY.md didn&rsquo;t &rarr; exit 2 with reminder on stderr</li>
+    </ol>
+
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Read and install the hook</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>cat courses/phase3/lesson-10-compound-reminder/hooks/compound-reminder.sh
+<span class="prompt">$ </span>mkdir -p ~/.claude/hooks
+<span class="prompt">$ </span>cp courses/phase3/lesson-10-compound-reminder/hooks/compound-reminder.sh ~/.claude/hooks/
+<span class="prompt">$ </span>chmod +x ~/.claude/hooks/compound-reminder.sh</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Register in settings</span>
+      <div class="step-content">
+        <p>Add the hook to <code>~/.claude/settings.json</code>:</p>
+        <div class="yaml-block">{
+  "hooks": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "bash ~/.claude/hooks/compound-reminder.sh"
+      }
+    ]
+  }
+}</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Test the reminder</span>
+      <div class="step-content">
+        <p>Complete a task with <code>/done</code>, then ask Claude something simple. The hook fires and reminds you to update MEMORY.md.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Satisfy the hook</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>echo "## $(date +%Y-%m-%d) Session Notes" &gt;&gt; ~/MEMORY.md
+<span class="prompt">$ </span>echo "- Completed: Plan weekend hike" &gt;&gt; ~/MEMORY.md</div>
+        <p>Now the next Stop event will find MEMORY.md recently updated and exit 0 (no reminder).</p>
+      </div>
+    </div>
+
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li>The hook fires after Claude responds (Stop event)</li>
+      <li>When a task was recently completed but MEMORY.md wasn&rsquo;t updated, the reminder appears</li>
+      <li>When MEMORY.md was updated recently, no reminder appears</li>
+      <li>When no tasks were completed recently, no reminder appears</li>
+      <li>The <code>stop_hook_active</code> guard prevents infinite loops</li>
+      <li>The hook is registered in <code>~/.claude/settings.json</code></li>
+    </ul>
+
+    <h2>Design Rationale</h2>
+
+    <p><strong>Why a 10-minute window?</strong> The <code>find -mmin -10</code> check creates a sliding window. If you completed a task 15 minutes ago, the hook stops reminding &mdash; you probably moved on.</p>
+
+    <p><strong>Why stderr for feedback?</strong> When a hook exits with code 2, Claude reads stderr as the feedback message. Stdout is ignored for hook feedback.</p>
+
+    <div class="callout insight">
+      <p><strong>Phase 2 Callback:</strong> Course 7 (Hooks): Stop event, exit codes (0=allow, 2=block+feedback), stderr for feedback messages, the <code>stop_hook_active</code> guard pattern.</p>
+    </div>
+
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> <a href="phase3-11-file-protection.html">Lesson 11: File Protection Hook</a> builds a proactive PreToolUse guard that blocks edits to log and archive files &mdash; enforcing data integrity.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <nav class="page-nav">
+      <a href="phase3-09-overdue-skill.html" class="prev">/overdue Skill</a>
+      <a href="phase3-11-file-protection.html" class="next">File Protection</a>
+    </nav>
+
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html" class="current">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

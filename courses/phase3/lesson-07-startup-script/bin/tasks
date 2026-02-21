@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# tasks — Launch the Task Workflow cockpit
+#
+# Creates a tmux session called "tasks" with three windows:
+#   Window 0 (hq):      Claude Code (left) + shell (right)
+#   Window 1 (inbox):   Live inbox watcher
+#   Window 2 (pending): Live pending watcher
+#
+# If the session already exists, reattaches to it.
+#
+# Usage:
+#   tasks
+#
+# Install:
+#   cp this-file ~/bin/tasks && chmod +x ~/bin/tasks
+#   Ensure ~/bin is in your PATH.
+
+set -e
+
+SESSION="tasks"
+TASKS_DIR="$HOME/work/_tasks"
+
+# ── Reattach if already running ─────────────────────────────
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "Session '$SESSION' already exists. Reattaching..."
+    tmux attach -t "$SESSION"
+    exit 0
+fi
+
+# ── Verify task directories exist ───────────────────────────
+if [ ! -d "$TASKS_DIR/inbox" ] || [ ! -d "$TASKS_DIR/pending" ]; then
+    echo "Error: Task directories not found at $TASKS_DIR"
+    echo "Run setup-tasks.sh first to create the directory structure."
+    exit 1
+fi
+
+# ── Create session with HQ window ──────────────────────────
+echo "Launching Task Workflow cockpit..."
+
+# Create session with first window named "hq"
+tmux new-session -d -s "$SESSION" -n "hq"
+
+# Split HQ: left pane (Claude) + right pane (shell)
+tmux split-window -t "$SESSION:hq" -h
+
+# ── Create inbox watcher window ─────────────────────────────
+tmux new-window -t "$SESSION" -n "inbox"
+tmux send-keys -t "$SESSION:inbox" \
+    "watch -n 5 'echo \"📬 Inbox (~/work/_tasks/inbox/)\" && echo \"────────────────────────────────\" && ls -lt ~/work/_tasks/inbox/*.md 2>/dev/null | awk \"{print \\$6, \\$7, \\$8, \\$9}\" || echo \"(empty)\"'" Enter
+
+# ── Create pending watcher window ────────────────────────────
+tmux new-window -t "$SESSION" -n "pending"
+tmux send-keys -t "$SESSION:pending" \
+    "watch -n 5 'echo \"📋 Pending (~/work/_tasks/pending/)\" && echo \"────────────────────────────────\" && for f in ~/work/_tasks/pending/*.md; do [ -f \"\$f\" ] || continue; title=\$(grep \"^title:\" \"\$f\" | sed \"s/title: //\"); due=\$(grep \"^due:\" \"\$f\" | sed \"s/due: //\"); pri=\$(grep \"^priority:\" \"\$f\" | sed \"s/priority: //\"); echo \"\$due  \$pri  \$title\"; done | sort || echo \"(empty)\"'" Enter
+
+# ── Launch Claude in HQ left pane ────────────────────────────
+tmux send-keys -t "$SESSION:hq.0" "claude" Enter
+
+# ── Switch to HQ window ─────────────────────────────────────
+tmux select-window -t "$SESSION:hq"
+
+# ── Send /today to Claude after startup delay ────────────────
+# Claude needs a few seconds to initialize before accepting input
+(sleep 4 && tmux send-keys -t "$SESSION:hq.0" "/today" Enter) &
+
+# ── Attach to the session ────────────────────────────────────
+tmux attach -t "$SESSION"

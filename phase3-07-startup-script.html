@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Startup Script — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 3: Task Workflow Mastery</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <h1 class="page-title">The Startup Script</h1>
+
+    <div class="course-meta">
+      <span class="meta-pill">Lesson <strong>7</strong> of 15</span>
+      <span class="meta-pill"><strong>Intermediate</strong></span>
+      <span class="meta-pill">25 min</span>
+    </div>
+
+    <p class="lead">Replace 2&ndash;3 minutes of manual tmux setup with a single command: <code>tasks</code>. The startup script creates a tmux session with Claude, watchers, and your skills pre-loaded &mdash; and auto-sends <code>/today</code> for your morning briefing.</p>
+
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <a href="phase3-06-triage-skill.html">Lessons 1&ndash;6</a> (all manual operations + <code>/next</code>, <code>/done</code>, <code>/triage</code>)</li>
+        <li>Completed <strong>Phase 1 Lesson 9</strong> (headless sessions, detached session creation)</li>
+        <li><code>~/work/_tasks/</code> populated with seed data</li>
+      </ul>
+    </div>
+
+    <h2>Script Architecture</h2>
+
+    <div class="file-tree">tasks (startup script)
+│
+├── Check: session exists? → reattach
+├── Check: task directories exist? → error if not
+│
+├── Create session "tasks"
+│   ├── Window 0 "hq": Claude (pane 0) + Shell (pane 1)
+│   ├── Window 1 "inbox": watch inbox directory
+│   └── Window 2 "pending": watch pending with metadata
+│
+├── Launch Claude in hq.0
+├── Send /today after 4-second delay
+└── Attach to session</div>
+
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Read the startup script</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>cat courses/phase3/lesson-07-startup-script/bin/tasks</div>
+        <p>Walk through each section: reattach guard (<code>has-session</code>), directory check, session creation (<code>new-session -d</code>), pane splits, watcher windows, Claude launch, delayed <code>/today</code>.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Install the script</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>mkdir -p ~/bin
+<span class="prompt">$ </span>cp courses/phase3/lesson-07-startup-script/bin/tasks ~/bin/tasks
+<span class="prompt">$ </span>chmod +x ~/bin/tasks</div>
+        <p>Ensure <code>~/bin</code> is in your PATH, then verify:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>which tasks</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Launch the cockpit</span>
+      <div class="step-content">
+        <p>Make sure you&rsquo;re <strong>not</strong> inside tmux, then:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>tasks</div>
+        <p>You should see: 3 windows (hq, inbox, pending), Claude starting in the left pane, and <code>/today</code> auto-sent after ~4 seconds.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Test reattach behavior</span>
+      <div class="step-content">
+        <p>Detach (<code>Ctrl+J d</code>) and run <code>tasks</code> again. It reattaches instead of creating a duplicate.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Test live watchers</span>
+      <div class="step-content">
+        <p>Create a test inbox item from the shell pane. Switch to the inbox window (<code>Ctrl+J 1</code>) &mdash; the new file appears within 5 seconds.</p>
+      </div>
+    </div>
+
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>tasks</code> command launches a 3-window tmux session (hq, inbox, pending)</li>
+      <li>HQ window has Claude in pane 0 and shell in pane 1</li>
+      <li>Inbox and pending watchers refresh every 5 seconds</li>
+      <li>Running <code>tasks</code> when a session exists reattaches instead of duplicating</li>
+      <li>Claude receives <code>/today</code> automatically after startup</li>
+      <li>The watcher reflects file changes in near-real-time</li>
+    </ul>
+
+    <h2>Design Rationale</h2>
+
+    <p><strong>Why a 4-second delay for <code>/today</code>?</strong> Claude Code needs a few seconds to initialize. The background subshell <code>(sleep 4 &amp;&amp; tmux send-keys ...)</code> handles this timing without blocking the script.</p>
+
+    <p><strong>Why <code>watch</code> instead of <code>fswatch</code>?</strong> <code>watch</code> is universally available, requires zero dependencies, and does exactly what we need &mdash; periodic refresh. For a 5-second refresh on a local directory, it&rsquo;s the right level of sophistication.</p>
+
+    <div class="callout insight">
+      <p><strong>Phase 1 Callback:</strong> Lesson 9 (Headless Sessions) for detached session creation, Lesson 3 (Split Panes) for the HQ layout, Lesson 6 (Windows) for the 3-window structure.</p>
+    </div>
+
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> The startup script sends <code>/today</code> on launch, but <a href="phase3-08-today-skill.html">Lesson 8: /today Skill</a> builds that morning briefing skill &mdash; a forked Explore agent that produces a daily overview without consuming your main context.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <nav class="page-nav">
+      <a href="phase3-06-triage-skill.html" class="prev">/triage Skill</a>
+      <a href="phase3-08-today-skill.html" class="next">/today Skill</a>
+    </nav>
+
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html" class="current">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

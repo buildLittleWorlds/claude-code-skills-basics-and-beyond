@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Full Daily Rhythm — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 3: Task Workflow Mastery</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <h1 class="page-title">The Full Daily Rhythm</h1>
+
+    <div class="course-meta">
+      <span class="meta-pill">Lesson <strong>15</strong> of 15</span>
+      <span class="meta-pill"><strong>Advanced</strong></span>
+      <span class="meta-pill">30 min</span>
+    </div>
+
+    <p class="lead">No new concepts, no new artifacts. This is the <strong>integration test</strong> &mdash; the complete daily rhythm, end-to-end, verified by a test script. Every skill, hook, and tmux pattern from the entire curriculum comes together here.</p>
+
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Lessons 1&ndash;14</strong> (all skills, hooks, cockpit, side-gigs integration)</li>
+        <li>All 6 skills installed: <code>/next</code>, <code>/done</code>, <code>/triage</code>, <code>/today</code>, <code>/overdue</code>, <code>/session-summary</code></li>
+        <li>Both hooks installed: compound-reminder, file-protection</li>
+        <li>Cockpit startup script at <code>~/bin/tasks</code></li>
+      </ul>
+    </div>
+
+    <h2>The Daily Rhythm</h2>
+
+    <div class="file-tree">┌─────────────────────────────────────────────┐
+│            THE DAILY RHYTHM                 │
+│                                             │
+│  Morning:                                   │
+│    $ tasks                   &larr; launch       │
+│    &rarr; /today auto-runs        &larr; briefing     │
+│                                             │
+│  Work session:                              │
+│    /triage                   &larr; process inbox│
+│    /next                     &larr; pick task    │
+│    (do the work)             &larr; actual work  │
+│    /done &lt;task&gt; &lt;summary&gt;    &larr; complete     │
+│    (repeat)                                 │
+│                                             │
+│  Periodic:                                  │
+│    /overdue                  &larr; check health │
+│                                             │
+│  End of day:                                │
+│    Update ~/MEMORY.md        &larr; reflect      │
+│    /session-summary          &larr; wrap up      │
+│    Ctrl+J d (detach)         &larr; leave        │
+│                                             │
+│  Hooks (automatic):                         │
+│    compound-reminder &larr; nag about MEMORY.md  │
+│    protect-task-files &larr; guard log/archive   │
+└─────────────────────────────────────────────┘</div>
+
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Run the pre-flight check</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>bash courses/phase3/lesson-15-daily-rhythm/daily-rhythm-test.sh</div>
+        <p>Phase 1 of the script verifies all directories, all 6 skills, both hooks, and the startup script are in place. Fix any failures before proceeding.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Launch the cockpit</span>
+      <div class="step-content">
+        <p>From a terminal <strong>outside</strong> tmux:</p>
+        <div class="terminal-block"><span class="prompt">$ </span>tasks</div>
+        <p>Wait for Claude to initialize and the <code>/today</code> briefing to appear automatically.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Run the full cycle</span>
+      <div class="step-content">
+        <ol>
+          <li><code>/triage</code> &mdash; Process the test inbox item</li>
+          <li><code>/next</code> &mdash; See the updated pending list</li>
+          <li><code>/overdue</code> &mdash; Check for escalated tasks</li>
+          <li><code>/done integration-test Completed the daily rhythm test</code> &mdash; Watch for confirmation popup, archive move, log entry, and compound-reminder hook</li>
+          <li>Update <code>~/MEMORY.md</code> with session notes</li>
+          <li><code>/session-summary</code> &mdash; Generate the end-of-session report</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Verify the results</span>
+      <div class="step-content">
+        <p>Return to the terminal where the test script is waiting and press Enter. It verifies: test task removed from inbox, removed from pending, present in archive with <code>status: done</code>, log entry exists, and MEMORY.md was updated today.</p>
+      </div>
+    </div>
+
+    <h2>Quick Reference Card</h2>
+
+    <table class="tool-table">
+      <thead>
+        <tr><th>Time</th><th>Action</th><th>Skill</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Start</td><td>Launch cockpit</td><td><code>$ tasks</code></td></tr>
+        <tr><td>Start</td><td>Read briefing</td><td><code>/today</code> (auto)</td></tr>
+        <tr><td>Morning</td><td>Process new tasks</td><td><code>/triage</code></td></tr>
+        <tr><td>During</td><td>Check queue</td><td><code>/next</code></td></tr>
+        <tr><td>During</td><td>Complete task</td><td><code>/done &lt;keyword&gt; &lt;summary&gt;</code></td></tr>
+        <tr><td>Periodic</td><td>Check overdue</td><td><code>/overdue</code></td></tr>
+        <tr><td>End</td><td>Write notes</td><td>Edit <code>~/MEMORY.md</code></td></tr>
+        <tr><td>End</td><td>Session report</td><td><code>/session-summary</code></td></tr>
+        <tr><td>End</td><td>Leave</td><td><code>Ctrl+J d</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li>Integration test script passes all pre-flight checks</li>
+      <li>Full cycle works: triage &rarr; next &rarr; (work) &rarr; done &rarr; summary</li>
+      <li>Watchers update in real-time as tasks move between directories</li>
+      <li>Status bar reflects current counts</li>
+      <li>Compound-reminder hook fires after completing a task</li>
+      <li>File-protection hook blocks unauthorized edits</li>
+      <li>Integration test script passes all verification checks</li>
+    </ul>
+
+    <div class="callout success">
+      <p><strong>Congratulations!</strong> Phase 3 is complete. The entire daily rhythm works end-to-end. <strong>Challenge Lab 3</strong> is the final unguided exercise: build a <code>/weekly-review</code> skill that synthesizes a full week of log files and session summaries. After that, the <strong>Extensions</strong> guide suggests directions for going further: MCP integration, multi-model optimization, and calendar sync.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <nav class="page-nav">
+      <a href="phase3-14-session-summary.html" class="prev">Session Summary</a>
+      <span></span>
+    </nav>
+
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html" class="current">15. Daily Rhythm</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

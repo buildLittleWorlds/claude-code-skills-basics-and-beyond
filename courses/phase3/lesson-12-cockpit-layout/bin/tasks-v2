@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# tasks-v2 — Enhanced Task Workflow cockpit with 4-pane HQ
+#
+# Upgrade from tasks (Lesson 7):
+#   - 4-pane HQ: Claude (top-left), Shell (top-right),
+#                Inbox watcher (bottom-left), Pending watcher (bottom-right)
+#   - Custom status bar with live task counts
+#   - All skills and hooks pre-configured
+#
+# If the session already exists, reattaches to it.
+#
+# Usage:
+#   tasks-v2
+#
+# Install:
+#   cp this-file ~/bin/tasks && chmod +x ~/bin/tasks
+
+set -e
+
+SESSION="tasks"
+TASKS_DIR="$HOME/work/_tasks"
+
+# ── Reattach if already running ─────────────────────────────
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "Session '$SESSION' already exists. Reattaching..."
+    tmux attach -t "$SESSION"
+    exit 0
+fi
+
+# ── Verify task directories exist ───────────────────────────
+if [ ! -d "$TASKS_DIR/inbox" ] || [ ! -d "$TASKS_DIR/pending" ]; then
+    echo "Error: Task directories not found at $TASKS_DIR"
+    echo "Run setup-tasks.sh first."
+    exit 1
+fi
+
+# ── Create session with HQ window ──────────────────────────
+echo "Launching Task Workflow cockpit v2..."
+
+# Create session with HQ window
+tmux new-session -d -s "$SESSION" -n "hq" -x 200 -y 50
+
+# ── Build 4-pane HQ layout ─────────────────────────────────
+# Start: single pane (pane 0)
+#
+# Step 1: Split horizontally → top (0) and bottom (1)
+tmux split-window -t "$SESSION:hq" -v -p 30
+
+# Step 2: Split top pane vertically → top-left (0) and top-right (2)
+tmux split-window -t "$SESSION:hq.0" -h -p 40
+
+# Step 3: Split bottom pane vertically → bottom-left (1) and bottom-right (3)
+tmux split-window -t "$SESSION:hq.1" -h -p 50
+
+# Result:
+#   Pane 0: top-left     (Claude Code)    — 60% width, 70% height
+#   Pane 2: top-right    (Shell)          — 40% width, 70% height
+#   Pane 1: bottom-left  (Inbox watcher)  — 50% width, 30% height
+#   Pane 3: bottom-right (Pending watcher)— 50% width, 30% height
+
+# ── Start watchers in bottom panes ──────────────────────────
+# Inbox watcher (bottom-left, pane 1)
+tmux send-keys -t "$SESSION:hq.1" \
+    "watch -n 5 'echo \"📬 Inbox\"; echo \"────────\"; ls ~/work/_tasks/inbox/*.md 2>/dev/null | while read f; do basename \"\$f\" .md; done || echo \"(empty)\"'" Enter
+
+# Pending watcher with counts (bottom-right, pane 3)
+tmux send-keys -t "$SESSION:hq.3" \
+    "watch -n 5 'echo \"📋 Pending\"; echo \"────────\"; total=0; overdue=0; today=\$(date +%Y-%m-%d); for f in ~/work/_tasks/pending/*.md; do [ -f \"\$f\" ] || continue; total=\$((total+1)); due=\$(grep \"^due:\" \"\$f\" | sed \"s/due: //\"); if [ ! -z \"\$due\" ] && [ \"\$due\" \\< \"\$today\" ]; then overdue=\$((overdue+1)); echo \"⚠️  \$due  \$(basename \$f .md)\"; else echo \"   \$due  \$(basename \$f .md)\"; fi; done | sort; echo \"────────\"; echo \"Total: \$total | Overdue: \$overdue\"'" Enter
+
+# ── Custom status bar ───────────────────────────────────────
+# Show task counts in the status bar (refreshes with tmux refresh interval)
+tmux set -t "$SESSION" status-right \
+    '#[fg=yellow]📬 #(ls ~/work/_tasks/inbox/*.md 2>/dev/null | wc -l | tr -d " ") #[fg=white]| #[fg=green]📋 #(ls ~/work/_tasks/pending/*.md 2>/dev/null | wc -l | tr -d " ") #[fg=white]| #[fg=red]⚠️  #(for f in ~/work/_tasks/pending/*.md; do [ -f "$f" ] || continue; due=$(grep "^due:" "$f" | sed "s/due: //"); [ ! -z "$due" ] && [ "$due" \< "$(date +%%Y-%%m-%%d)" ] && echo x; done | wc -l | tr -d " ") #[fg=white]| %H:%M'
+
+tmux set -t "$SESSION" status-right-length 80
+tmux set -t "$SESSION" status-interval 10
+
+# ── Launch Claude in top-left pane ──────────────────────────
+tmux send-keys -t "$SESSION:hq.0" "claude" Enter
+
+# ── Focus the shell pane for initial interaction ─────────────
+tmux select-pane -t "$SESSION:hq.2"
+
+# ── Send /today after Claude initializes ─────────────────────
+(sleep 4 && tmux send-keys -t "$SESSION:hq.0" "/today" Enter) &
+
+# ── Attach to the session ────────────────────────────────────
+tmux attach -t "$SESSION"
