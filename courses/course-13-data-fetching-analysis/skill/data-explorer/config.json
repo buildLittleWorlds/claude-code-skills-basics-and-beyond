@@ -1,0 +1,53 @@
+{
+  "datasources": [
+    {
+      "name": "app_db",
+      "type": "postgres",
+      "connection_env": "APP_DB_URL",
+      "description": "Primary application database (read replica)",
+      "default_schema": "public"
+    },
+    {
+      "name": "metrics",
+      "type": "prometheus",
+      "connection_env": "PROMETHEUS_URL",
+      "description": "Prometheus metrics server"
+    },
+    {
+      "name": "logs",
+      "type": "elasticsearch",
+      "connection_env": "ELASTICSEARCH_URL",
+      "description": "Centralized log storage (application and infrastructure logs)"
+    }
+  ],
+  "dashboards": {
+    "api_latency": {
+      "url": "https://grafana.internal/d/abc123/api-latency",
+      "datasource_uid": "prometheus-prod",
+      "description": "P50/P95/P99 latency by endpoint"
+    },
+    "error_budget": {
+      "url": "https://grafana.internal/d/def456/error-budget",
+      "datasource_uid": "prometheus-prod",
+      "description": "SLO burn rate and remaining error budget"
+    },
+    "user_activity": {
+      "url": "https://grafana.internal/d/ghi789/user-activity",
+      "datasource_uid": "app-postgres",
+      "description": "Signups, logins, active sessions over time"
+    },
+    "infrastructure": {
+      "url": "https://grafana.internal/d/jkl012/infrastructure",
+      "datasource_uid": "prometheus-prod",
+      "description": "CPU, memory, disk, network by service"
+    },
+    "deployments": {
+      "url": "https://grafana.internal/d/mno345/deployments",
+      "datasource_uid": "app-postgres",
+      "description": "Deploy frequency, rollback rate, lead time"
+    }
+  },
+  "cache_dir": ".cache/data-explorer",
+  "default_time_range": "1h",
+  "max_cache_age_minutes": 60
+}

@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production Skill Craft — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 4: Production Patterns</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Production Skill Craft &mdash; Gotchas, Setup, Memory &amp; Measurement</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>12</strong> of 15</span>
+      <span class="meta-pill"><strong>Intermediate</strong></span>
+      <span class="meta-pill">45 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">A working skill is only the beginning &mdash; a <em>production</em> skill handles edge cases, remembers past runs, adapts to each user&rsquo;s environment, and proves its value with usage data. In this course you&rsquo;ll refactor the Course&nbsp;1 <code>daily-standup</code> skill into a battle-tested <code>daily-standup-v2</code>, adding gotchas files, user config, execution memory, and invocation measurement.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Course 1: Your First Skill in Five Minutes</strong> (skill folder basics, YAML frontmatter, the <code>daily-standup</code> skill)</li>
+        <li>Completed <strong>Course 2: Crafting Descriptions and Trigger Phrases</strong> (description formula, trigger phrases, under/over-triggering)</li>
+        <li>Completed <strong>Course 3: Full Skill Anatomy</strong> (scripts, references, assets, progressive disclosure L3)</li>
+        <li>Completed <strong>Course 4: Testing, Iteration, and the Feedback Loop</strong> (test plans, iteration rounds, performance comparison)</li>
+        <li>You have the <code>daily-standup</code> skill from Course 1 installed</li>
+        <li>Claude Code installed and working (<code>claude</code> command available)</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>Don&rsquo;t State the Obvious</h3>
+
+    <p>The single biggest mistake in production skills is telling Claude things it already knows. Claude is good at a lot of things out of the box &mdash; writing clean code, following standard formats, being polite. When your skill restates these defaults, you waste tokens and dilute the instructions that actually matter.</p>
+
+    <p>The audit technique is simple: <strong>remove a line, then test whether behavior changes.</strong> If removing an instruction produces identical output, that instruction was dead weight.</p>
+
+    <p>Consider this example from a code review skill:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">Code review instructions (before audit)</div>
+      <pre>## Instructions
+- Read the code carefully before reviewing        &larr; Claude does this anyway
+- Check for syntax errors                          &larr; Claude does this anyway
+- Look for security vulnerabilities                &larr; Claude does this anyway
+- Ensure all database queries use parameterized    &larr; THIS changes behavior
+  statements, never string concatenation
+- Flag any use of eval() or exec()                 &larr; THIS changes behavior
+- Check that error messages don&rsquo;t leak stack traces &larr; THIS changes behavior</pre>
+    </div>
+
+    <p>The first three lines are noise. Claude will read code carefully, check syntax, and look for security issues without being told. The last three lines push Claude to check specific things it might otherwise skip.</p>
+
+    <p><strong>The removal test:</strong></p>
+
+    <ol>
+      <li>Pick a line in your skill</li>
+      <li>Comment it out or delete it</li>
+      <li>Run the same prompt 3 times with and without the line</li>
+      <li>If the outputs are substantively the same, the line is dead weight</li>
+      <li>Remove it permanently</li>
+    </ol>
+
+    <p>A lean skill that contains only non-obvious instructions will outperform a verbose skill that buries the important parts in boilerplate.</p>
+
+    <h3>Build a Gotchas Section</h3>
+
+    <p>Every skill develops failure modes over time. A user reports that the standup generator lists the same item twice. Another finds it crashes when there&rsquo;s no git history. These aren&rsquo;t bugs in the skill &mdash; they&rsquo;re patterns that Claude needs explicit guidance to avoid.</p>
+
+    <p>A <strong>gotchas file</strong> is a first-class pattern for capturing these failure points. It lives alongside SKILL.md as <code>gotchas.md</code> and uses a consistent structure:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">gotchas.md</div>
+      <pre># Gotchas
+
+## Duplicate items from merge commits
+- **Symptom**: Yesterday section lists the same work item twice
+- **Wrong behavior**: Claude reads `git log` and includes both the feature commit and the merge commit
+- **Correct behavior**: Use `git log --no-merges` to filter out merge commits, or deduplicate by commit message content before presenting items</pre>
+    </div>
+
+    <p>Each gotcha follows the <strong>symptom &rarr; wrong behavior &rarr; correct behavior</strong> pattern. This structure works because:</p>
+
+    <ul>
+      <li><strong>Symptom</strong> tells Claude <em>when</em> this gotcha applies (pattern matching)</li>
+      <li><strong>Wrong behavior</strong> tells Claude <em>what to avoid</em> (negative example)</li>
+      <li><strong>Correct behavior</strong> tells Claude <em>what to do instead</em> (positive example)</li>
+    </ul>
+
+    <p>The gotchas file is iterative &mdash; you add entries as you discover problems in production. It becomes the skill&rsquo;s institutional memory. Reference it from SKILL.md so Claude loads it when relevant:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">SKILL.md (excerpt)</div>
+      <pre>For known edge cases and failure patterns, see [gotchas.md](./gotchas.md).</pre>
+    </div>
+
+    <h3>Setup &amp; Config Pattern</h3>
+
+    <p>Production skills often need user-specific context: which Slack channel to post to, what the team name is, what format the user prefers. Hardcoding these values means the skill only works for one person. The solution is a <code>config.json</code> in the skill directory.</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>{
+  "team_name": "Platform Engineering",
+  "slack_channel": "#platform-standup",
+  "standup_time": "09:30",
+  "format_preference": "bullet"
+}</pre>
+    </div>
+
+    <p>The skill reads this config at runtime. But the config might not exist yet &mdash; the user hasn&rsquo;t set it up. This is where the <strong>check-on-first-run</strong> pattern comes in:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">SKILL.md &mdash; Setup section</div>
+      <pre>## Setup
+
+Before generating output, check if `config.json` exists in this skill&rsquo;s directory.
+
+If it does NOT exist:
+1. Ask the user for the following information:
+   - Team name (used in the standup header)
+   - Slack channel (for posting context)
+   - Preferred standup time (for greeting)
+   - Format preference: &ldquo;bullet&rdquo; or &ldquo;paragraph&rdquo;
+2. Create `config.json` with their responses
+3. Confirm the config was saved
+
+If it DOES exist:
+1. Read the config silently
+2. Use the values throughout the standup generation
+3. Do NOT re-ask for config values unless the user says &ldquo;reconfigure&rdquo; or &ldquo;update config&rdquo;</pre>
+    </div>
+
+    <p>This pattern gives you personalization without manual setup instructions. The first time a user runs the skill, they get prompted. Every subsequent run uses the saved config.</p>
+
+    <p>For plugin-distributed skills, use <code>${CLAUDE_PLUGIN_DATA}</code> as the storage path &mdash; this directory survives plugin upgrades and is specific to the plugin installation:</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">SKILL.md (plugin variant)</div>
+      <pre>Check for config at `${CLAUDE_PLUGIN_DATA}/config.json`.</pre>
+    </div>
+
+    <h3>Skill-Level Memory</h3>
+
+    <p>Config handles static preferences. But what about dynamic state that changes every run? A standup skill that remembers what you reported yesterday can avoid duplicating items. A PR reviewer that remembers past feedback can track whether issues were addressed.</p>
+
+    <p><strong>Skill-level memory</strong> stores execution history in persistent files. Three patterns, in order of complexity:</p>
+
+    <p><strong>1. Append-only log</strong> &mdash; Simplest. Each run appends a timestamped entry.</p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">SKILL.md &mdash; Memory section</div>
+      <pre>After generating the standup, append the following to `${CLAUDE_PLUGIN_DATA}/standup-log.jsonl`:
+
+{"date": "2025-01-15", "yesterday": ["Fixed auth bug", "Reviewed PR #42"], "today": ["Deploy auth fix", "Start feature X"], "blockers": []}</pre>
+    </div>
+
+    <p>Use JSONL (one JSON object per line) rather than a JSON array. Appending to an array requires reading the whole file; appending a line doesn&rsquo;t.</p>
+
+    <p><strong>2. Structured JSON</strong> &mdash; For state that gets updated, not just appended.</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>{
+  "last_run": "2025-01-15T09:30:00Z",
+  "streak": 5,
+  "most_common_blockers": ["CI flakiness", "code review backlog"],
+  "items_carried_over": ["Deploy auth fix"]
+}</pre>
+    </div>
+
+    <p>Read the file, update values, write it back. Good for statistics and carry-over tracking.</p>
+
+    <p><strong>3. SQLite</strong> &mdash; For complex queries across many runs. Overkill for most skills, but useful when you need to answer questions like &ldquo;what did I work on in the last 30 days?&rdquo; across hundreds of entries.</p>
+
+    <p>The key design principle: <strong>memory should improve the skill&rsquo;s output, not just exist for its own sake.</strong> If you log data but never read it, remove the logging. Every piece of stored state should directly feed back into better output.</p>
+
+    <h3>Measuring Skills</h3>
+
+    <p>You&rsquo;ve built a skill, tested it, deployed it. But how do you know it&rsquo;s actually being used? And when it is used, is it performing well?</p>
+
+    <p><strong>Measurement</strong> answers two questions:</p>
+
+    <ol>
+      <li><strong>Is the skill triggering?</strong> (Invocation tracking)</li>
+      <li><strong>Is the skill helping?</strong> (Quality assessment)</li>
+    </ol>
+
+    <p>For invocation tracking, use a <strong>PreToolUse hook</strong> that logs every time Claude loads a skill. The hook intercepts tool calls, checks if a skill was invoked, and appends to a log file:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>#!/bin/bash
+# skill-usage-logger.sh -- PreToolUse hook
+# Reads the hook JSON from stdin, extracts skill info, logs it
+
+INPUT=$(cat)
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
+
+# Log all skill invocations
+if [[ -n "$TOOL_NAME" ]]; then
+  LOG_FILE="${HOME}/.claude/skill-usage.jsonl"
+  TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  echo "{\"timestamp\":\"$TIMESTAMP\",\"tool\":\"$TOOL_NAME\"}" &gt;&gt; "$LOG_FILE"
+fi
+
+# Always allow -- exit 0 with empty output means "proceed"
+exit 0</pre>
+    </div>
+
+    <p>Then write an analytics script that parses the log:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>jq -r '.tool' ~/.claude/skill-usage.jsonl | sort | uniq -c | sort -rn</div>
+
+    <p><strong>Detecting under-triggering</strong> is the harder problem. If a skill never shows up in the log, either:</p>
+
+    <ul>
+      <li>Users aren&rsquo;t asking for that type of task (the skill isn&rsquo;t needed)</li>
+      <li>Users are asking but the description doesn&rsquo;t match (the skill needs better triggers)</li>
+    </ul>
+
+    <p>Compare your log against your expectations. If you built a standup skill and nobody invokes it during morning hours, investigate the description.</p>
+
+    <h3>Avoid Railroading Claude</h3>
+
+    <p>The final production principle: <strong>give information, not rigid steps.</strong> Claude is an intelligent model that adapts to context. When you over-specify a workflow, you prevent Claude from making good decisions when the situation deviates from your script.</p>
+
+    <p><strong>Over-specified (railroading):</strong></p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">SKILL.md &mdash; rigid approach</div>
+      <pre>## Steps
+1. Run `git log --oneline -10`
+2. Parse the output to extract commit messages
+3. Group commits by file path
+4. For each group, write a bullet point starting with the file name
+5. Format as a Markdown list under "## Yesterday"</pre>
+    </div>
+
+    <p>This works for the exact scenario you imagined &mdash; but breaks when the user has no git history, or when the commits span 50 files, or when the user wants a different grouping.</p>
+
+    <p><strong>Flexible (informing):</strong></p>
+
+    <div class="skill-file">
+      <div class="skill-file-header">SKILL.md &mdash; goal-oriented approach</div>
+      <pre>## Yesterday Section
+Summarize recent work based on available context. Preferred sources, in order:
+- Git history (`git log`) -- most reliable for recent commits
+- Open files and editor state -- useful for in-progress work
+- Conversation context -- what the user has mentioned
+
+Group related items together. Aim for 2-4 bullets. If no context is available, ask the user.</pre>
+    </div>
+
+    <p>The flexible version gives Claude the same intent (summarize recent work) but lets it adapt. If git history is empty, it falls back to other sources instead of failing at step 1.</p>
+
+    <p>The test for railroading: <strong>imagine three different scenarios where a user would invoke this skill.</strong> If your instructions would fail or produce poor results in any of them, you&rsquo;ve over-specified. Rewrite to describe the <em>goal</em> and <em>constraints</em>, not the <em>steps</em>.</p>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <table class="tool-table">
+        <thead>
+          <tr>
+            <th>Concept</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Don&rsquo;t state the obvious</td>
+            <td>Production experience; token efficiency principles</td>
+          </tr>
+          <tr>
+            <td>Gotchas pattern</td>
+            <td>Error-driven development; iterative maintenance</td>
+          </tr>
+          <tr>
+            <td>Config pattern</td>
+            <td><code>config.json</code> + <code>AskUserQuestion</code> for structured setup</td>
+          </tr>
+          <tr>
+            <td>Skill-level memory</td>
+            <td><code>${CLAUDE_PLUGIN_DATA}</code> for persistent storage</td>
+          </tr>
+          <tr>
+            <td>Measuring skills</td>
+            <td>PreToolUse hooks for invocation logging</td>
+          </tr>
+          <tr>
+            <td>Avoiding railroading</td>
+            <td>Goal-oriented vs step-oriented instruction design</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>In this course, you&rsquo;ll refactor the <code>daily-standup</code> skill from Course 1 into a <strong>production-quality</strong> <code>daily-standup-v2</code> skill. The original skill was a great starting point &mdash; clear format, specific instructions, good trigger phrases. But it lacks the patterns that make a skill robust in real-world use:</p>
+
+    <ul>
+      <li>No config &mdash; it doesn&rsquo;t know your team name or Slack channel</li>
+      <li>No gotchas &mdash; it repeats the same mistakes every time</li>
+      <li>No memory &mdash; it can&rsquo;t remember what you reported yesterday</li>
+      <li>No measurement &mdash; you don&rsquo;t know if it&rsquo;s being used</li>
+    </ul>
+
+    <p>By the end, you&rsquo;ll have:</p>
+
+    <div class="file-tree">daily-standup-v2/
+&#9500;&#9472;&#9472; SKILL.md          &larr; Production-quality skill with config, memory, gotchas
+&#9500;&#9472;&#9472; config.json       &larr; User-specific settings (team, channel, format)
+&#9492;&#9472;&#9472; gotchas.md        &larr; Known failure patterns with fixes</div>
+
+    <p>Plus two scripts for measuring skill usage across your entire skill library:</p>
+
+    <div class="file-tree">scripts/
+&#9500;&#9472;&#9472; skill-usage-logger.sh   &larr; PreToolUse hook for invocation logging
+&#9492;&#9472;&#9472; analyze-usage.sh        &larr; Analytics over the invocation log</div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Review the Original daily-standup Skill</span>
+      <div class="step-content">
+        <p>Before refactoring, let&rsquo;s audit the original skill from Course 1. Open your installed skill:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cat ~/.claude/skills/daily-standup/SKILL.md</div>
+
+        <p>Read through it with the &ldquo;Don&rsquo;t State the Obvious&rdquo; lens. Ask yourself for each line:</p>
+
+        <ul>
+          <li>Would Claude do this anyway without being told?</li>
+          <li>Does this instruction change Claude&rsquo;s behavior in a measurable way?</li>
+        </ul>
+
+        <p>For example, &ldquo;Keep each bullet point to one line (under 100 characters)&rdquo; &mdash; this is a non-obvious constraint that changes behavior. Claude&rsquo;s default might be longer bullets. Good, keep it.</p>
+
+        <p>But &ldquo;Be specific&rdquo; is borderline. Claude generally tries to be specific. The example after it (&ldquo;Fixed auth token refresh bug in login.ts&rdquo; not &ldquo;Worked on auth&rdquo;) is the valuable part &mdash; it shows <em>how specific</em> you mean.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Create the daily-standup-v2 Directory</span>
+      <div class="step-content">
+        <div class="terminal-block"><span class="prompt">$ </span>mkdir -p ~/.claude/skills/daily-standup-v2</div>
+
+        <p>We&rsquo;re creating a new skill rather than modifying the original. This lets you compare them side-by-side and keeps the Course 1 artifact intact.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Write the Gotchas File</span>
+      <div class="step-content">
+        <p>Start with <code>gotchas.md</code>. This file captures failure patterns you&rsquo;ve likely already encountered with the original skill.</p>
+
+        <p>Create <code>~/.claude/skills/daily-standup-v2/gotchas.md</code> with these entries:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">~/.claude/skills/daily-standup-v2/gotchas.md</div>
+          <pre># Gotchas
+
+## Duplicate items from merge commits
+- **Symptom**: Yesterday section lists the same work item twice with slightly different wording
+- **Wrong behavior**: Claude reads `git log` and includes both the original commit and the merge commit that brought it into main
+- **Correct behavior**: Use `git log --no-merges` to filter out merge commits, or deduplicate by comparing commit message content before presenting items
+
+## Empty git history in new repos
+- **Symptom**: Claude runs `git log` and gets an error or empty output, then produces a broken standup
+- **Wrong behavior**: Claude proceeds with the git-based approach and outputs empty or error-filled Yesterday section
+- **Correct behavior**: Detect when git history is unavailable or empty. Fall back to asking the user what they worked on. Never present an empty Yesterday section -- either populate it or ask.
+
+## Weekend/Monday carry-over confusion
+- **Symptom**: On Monday, the Yesterday section shows Friday&rsquo;s work but the user also did weekend work, or vice versa
+- **Wrong behavior**: Claude assumes &ldquo;yesterday&rdquo; means the calendar day before today, missing weekend work or including stale Friday items
+- **Correct behavior**: On Monday, check git history for Friday through Sunday. Present items from the most recent working period. If the user worked over the weekend, include that. Frame the section header as &ldquo;Since Last Standup&rdquo; when spanning multiple days.
+
+## Standup is too long for Slack
+- **Symptom**: Generated standup has 8+ bullet points per section and exceeds Slack message length norms
+- **Wrong behavior**: Claude lists every commit individually, producing a standup that&rsquo;s more of a changelog than a summary
+- **Correct behavior**: Group related commits into higher-level work items. Aim for 2-4 bullets per section. If there are more than 4 items, consolidate related work. A standup should take 30 seconds to read.</pre>
+        </div>
+
+        <p>Each gotcha follows the symptom/wrong/correct pattern. These come from real-world experience with standup generators &mdash; you&rsquo;ll add more as you use the skill.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Create the Config File</span>
+      <div class="step-content">
+        <p>Create <code>~/.claude/skills/daily-standup-v2/config.json</code>:</p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <pre>{
+  "team_name": "My Team",
+  "slack_channel": "#team-standup",
+  "standup_time": "09:30",
+  "format_preference": "bullet"
+}</pre>
+        </div>
+
+        <p>This is the default config that gets created on first run. The skill will check for this file and prompt the user to customize it if needed.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Write the Production SKILL.md</span>
+      <div class="step-content">
+        <p>Now create <code>~/.claude/skills/daily-standup-v2/SKILL.md</code>. This is the core refactor. Here&rsquo;s what changes from the Course 1 version:</p>
+
+        <p><strong>Removed</strong> (stating the obvious):</p>
+        <ul>
+          <li>Generic instructions like &ldquo;be specific&rdquo; without examples</li>
+          <li>&ldquo;List any blockers mentioned in conversation&rdquo; &mdash; Claude does this naturally</li>
+        </ul>
+
+        <p><strong>Added</strong> (production patterns):</p>
+        <ul>
+          <li>Config reading with check-on-first-run</li>
+          <li>Gotchas reference for edge case handling</li>
+          <li>Execution logging for cross-session memory</li>
+          <li>Flexible fallback chain instead of rigid steps</li>
+        </ul>
+
+        <p>Create the file with the content from the <code>skill/daily-standup-v2/SKILL.md</code> in this course&rsquo;s directory. The key sections are:</p>
+
+        <ol>
+          <li><strong>YAML frontmatter</strong> with an improved description that captures more trigger phrases</li>
+          <li><strong>Setup section</strong> implementing the check-on-first-run config pattern</li>
+          <li><strong>Format section</strong> that&rsquo;s goal-oriented rather than step-by-step</li>
+          <li><strong>Memory section</strong> that logs each standup for cross-session awareness</li>
+          <li><strong>Gotchas reference</strong> linking to the gotchas file</li>
+        </ol>
+
+        <p>Compare the original and v2 side-by-side:</p>
+
+        <table class="tool-table">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Course 1 Original</th>
+              <th>Course 12 v2</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Config</td>
+              <td>None</td>
+              <td><code>config.json</code> with team info</td>
+            </tr>
+            <tr>
+              <td>Error handling</td>
+              <td>None</td>
+              <td>Gotchas file with 4 patterns</td>
+            </tr>
+            <tr>
+              <td>Memory</td>
+              <td>None</td>
+              <td>JSONL execution log</td>
+            </tr>
+            <tr>
+              <td>Fallback strategy</td>
+              <td>Single approach</td>
+              <td>Ordered source chain</td>
+            </tr>
+            <tr>
+              <td>Instruction style</td>
+              <td>Some rigid steps</td>
+              <td>Goal-oriented with constraints</td>
+            </tr>
+            <tr>
+              <td>Token efficiency</td>
+              <td>Some obvious lines</td>
+              <td>Audited for non-obvious only</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Build the Usage Logger Hook</span>
+      <div class="step-content">
+        <p>Create <code>scripts/skill-usage-logger.sh</code>:</p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <pre>#!/bin/bash
+# skill-usage-logger.sh -- PreToolUse hook for measuring skill invocations
+# Install: Add to .claude/hooks.json under PreToolUse
+# Logs every tool invocation with timestamp and tool name
+
+INPUT=$(cat)
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"')
+
+if [[ -n "$TOOL_NAME" ]]; then
+  LOG_DIR="${HOME}/.claude/logs"
+  mkdir -p "$LOG_DIR"
+  LOG_FILE="${LOG_DIR}/skill-usage.jsonl"
+  TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  DATE=$(date -u +"%Y-%m-%d")
+  echo "{\"timestamp\":\"$TIMESTAMP\",\"date\":\"$DATE\",\"tool\":\"$TOOL_NAME\",\"session\":\"$SESSION_ID\"}" &gt;&gt; "$LOG_FILE"
+fi
+
+# Always allow the tool call to proceed
+exit 0</pre>
+        </div>
+
+        <p>Make it executable:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>chmod +x scripts/skill-usage-logger.sh</div>
+
+        <p>To install this hook, add it to your <code>.claude/hooks.json</code>:</p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <pre>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "command": "~/.claude/hooks/skill-usage-logger.sh",
+        "description": "Logs all tool invocations for usage analytics"
+      }
+    ]
+  }
+}</pre>
+        </div>
+
+        <p>Copy the script to your hooks directory:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>mkdir -p ~/.claude/hooks
+<span class="prompt">$ </span>cp scripts/skill-usage-logger.sh ~/.claude/hooks/</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Build the Analytics Script</span>
+      <div class="step-content">
+        <p>Create <code>scripts/analyze-usage.sh</code>:</p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <pre>#!/bin/bash
+# analyze-usage.sh -- Parse skill usage logs and output statistics
+# Reads from ~/.claude/logs/skill-usage.jsonl
+
+LOG_FILE="${HOME}/.claude/logs/skill-usage.jsonl"
+
+if [[ ! -f "$LOG_FILE" ]]; then
+  echo "No usage log found at $LOG_FILE"
+  echo "Install the skill-usage-logger.sh hook first."
+  exit 1
+fi
+
+TOTAL=$(wc -l &lt; "$LOG_FILE" | tr -d ' ')
+echo "=== Skill Usage Report ==="
+echo "Log file: $LOG_FILE"
+echo "Total invocations: $TOTAL"
+echo ""
+
+echo "--- Invocations per tool (top 15) ---"
+jq -r '.tool' "$LOG_FILE" | sort | uniq -c | sort -rn | head -15
+echo ""
+
+echo "--- Daily trend (last 14 days) ---"
+jq -r '.date' "$LOG_FILE" | sort | uniq -c | tail -14
+echo ""
+
+echo "--- Most used (top 3) ---"
+jq -r '.tool' "$LOG_FILE" | sort | uniq -c | sort -rn | head -3
+echo ""
+
+echo "--- Least used (bottom 3) ---"
+jq -r '.tool' "$LOG_FILE" | sort | uniq -c | sort -rn | tail -3
+echo ""
+
+echo "--- Sessions with most activity ---"
+jq -r '.session' "$LOG_FILE" | sort | uniq -c | sort -rn | head -5
+echo ""
+
+echo "--- Hourly distribution ---"
+jq -r '.timestamp' "$LOG_FILE" | cut -dT -f2 | cut -d: -f1 | sort | uniq -c | sort -k2 -n</pre>
+        </div>
+
+        <p>Make it executable:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>chmod +x scripts/analyze-usage.sh</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">8</span>
+      <span class="step-title">Test the Refactored Skill</span>
+      <div class="step-content">
+        <p>Now test <code>daily-standup-v2</code> against the original. Open Claude Code in a project with git history:</p>
+
+        <p><strong>Test 1: First-run config setup</strong></p>
+
+        <div class="prompt-box-dark">standup</div>
+
+        <p>If you haven&rsquo;t created <code>config.json</code> yet, the skill should ask you for team name, Slack channel, standup time, and format preference. Verify it creates the config file.</p>
+
+        <p><strong>Test 2: Normal standup generation</strong></p>
+
+        <div class="prompt-box-dark">daily standup</div>
+
+        <p>Verify:</p>
+        <ul>
+          <li>It reads from <code>config.json</code> (team name appears in output)</li>
+          <li>It handles git history correctly (no duplicates from merge commits)</li>
+          <li>It logs the execution to the standup log</li>
+        </ul>
+
+        <p><strong>Test 3: Monday edge case</strong></p>
+
+        <p>If it&rsquo;s Monday (or pretend it is), check whether the skill handles the weekend carry-over correctly &mdash; it should look at Friday&ndash;Sunday git history.</p>
+
+        <p><strong>Test 4: Empty repo</strong></p>
+
+        <p>Create a fresh repo with no commits and run the standup. Verify it falls back to asking the user rather than showing errors.</p>
+
+        <p><strong>Test 5: Compare with original</strong></p>
+
+        <p>Run the original <code>daily-standup</code> skill and the new <code>daily-standup-v2</code> with the same context. Note differences in output quality, error handling, and personalization.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">9</span>
+      <span class="step-title">Review Your Measurement Data</span>
+      <div class="step-content">
+        <p>After running several tests, check if the usage logger captured the invocations:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cat ~/.claude/logs/skill-usage.jsonl</div>
+
+        <p>Then run the analytics:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>./scripts/analyze-usage.sh</div>
+
+        <p>You should see your test invocations in the log. In a real deployment, this data accumulates over days and weeks, giving you insight into which skills are worth maintaining and which are dead weight.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">10</span>
+      <span class="step-title">Iterate on the Gotchas</span>
+      <div class="step-content">
+        <p>During testing, you likely discovered at least one new edge case. Add it to <code>gotchas.md</code> using the symptom/wrong/correct format. This is the production cycle:</p>
+
+        <ol>
+          <li>Use the skill</li>
+          <li>Notice a failure</li>
+          <li>Document the gotcha</li>
+          <li>Update SKILL.md if needed to reference the pattern</li>
+          <li>Re-test</li>
+        </ol>
+
+        <p>The gotchas file grows over time. A mature production skill might have 10&ndash;15 gotchas &mdash; each one representing a failure that now gets handled correctly.</p>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li>
+        <p><strong>Audit an existing skill</strong></p>
+        <p>Pick any skill you&rsquo;ve built in Courses 1&ndash;11. Apply the &ldquo;Don&rsquo;t State the Obvious&rdquo; removal test to every line. Remove lines that don&rsquo;t change behavior, then verify the skill still works correctly. Document how many lines you removed and whether output quality changed.</p>
+      </li>
+      <li>
+        <p><strong>Add gotchas to another skill</strong></p>
+        <p>Pick a skill you&rsquo;ve used at least 5 times. Write a <code>gotchas.md</code> with at least 3 entries based on real failures you&rsquo;ve observed. Each entry must follow the symptom/wrong/correct format.</p>
+      </li>
+      <li>
+        <p><strong>Implement config for a different skill</strong></p>
+        <p>Add a <code>config.json</code> and check-on-first-run pattern to a skill of your choice. Choose at least 3 configurable values that meaningfully change the skill&rsquo;s behavior (not cosmetic changes).</p>
+      </li>
+      <li>
+        <p><strong>Run the usage logger for a full day</strong></p>
+        <p>Install <code>skill-usage-logger.sh</code> as a PreToolUse hook and use Claude Code normally for a full workday. At the end of the day, run <code>analyze-usage.sh</code> and answer: Which skill was invoked most? Were there any skills that were never invoked? Why? What time of day do you use skills the most?</p>
+      </li>
+      <li>
+        <p><strong>Rewrite a railroaded skill</strong></p>
+        <p>Find a skill (yours or the examples in this course) that uses rigid step-by-step instructions. Rewrite it using goal-oriented instructions with fallback chains. Test both versions with 3 different scenarios and document which handles edge cases better.</p>
+      </li>
+      <li>
+        <p><strong>Build a memory-enabled skill</strong></p>
+        <p>Add JSONL execution logging to a skill. After 5+ runs, have Claude read the log and use past executions to improve current output (e.g., &ldquo;You reported working on Feature X for the last 3 days &mdash; is it complete?&rdquo;).</p>
+      </li>
+    </ol>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>~/.claude/skills/daily-standup-v2/SKILL.md</code> exists with correct casing</li>
+      <li>YAML frontmatter has valid <code>---</code> delimiters with <code>name</code> and <code>description</code></li>
+      <li><code>description</code> includes expanded trigger phrases beyond the original</li>
+      <li><code>~/.claude/skills/daily-standup-v2/config.json</code> exists with team_name, slack_channel, standup_time, format_preference</li>
+      <li><code>~/.claude/skills/daily-standup-v2/gotchas.md</code> exists with at least 3 entries</li>
+      <li>Each gotcha follows the symptom &rarr; wrong behavior &rarr; correct behavior format</li>
+      <li>SKILL.md references <code>gotchas.md</code> for edge case handling</li>
+      <li>SKILL.md implements check-on-first-run config pattern</li>
+      <li>SKILL.md includes execution logging instructions</li>
+      <li>SKILL.md uses goal-oriented instructions (not rigid step lists)</li>
+      <li>Running &ldquo;standup&rdquo; triggers the v2 skill</li>
+      <li>First run prompts for config values (if config.json is absent)</li>
+      <li>Subsequent runs use saved config silently</li>
+      <li>Standup handles empty git history gracefully</li>
+      <li>Standup handles Monday/weekend carry-over correctly</li>
+      <li><code>scripts/skill-usage-logger.sh</code> is executable and has correct shebang</li>
+      <li><code>scripts/analyze-usage.sh</code> is executable and has correct shebang</li>
+      <li>Usage logger produces valid JSONL output</li>
+      <li>Analytics script outputs invocation counts, daily trends, and most/least used</li>
+      <li>You can articulate at least 2 lines you removed from the original skill for being &ldquo;obvious&rdquo;</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> In <strong>Course 13: Data Fetching &amp; Analysis</strong>, you&rsquo;ll learn how to build skills that pull data from external sources &mdash; APIs, databases, log files &mdash; and transform it into actionable insights. You&rsquo;ll package <code>daily-standup-v2</code> and your other production skills into a team-ready plugin with version management and cross-platform compatibility.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-11-capstone.html" class="prev">Capstone</a>
+      <a href="course-13-data-fetching-analysis.html" class="next">Data Fetching &amp; Analysis</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <!-- Phase 1: Skills Fundamentals -->
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+
+        <!-- Bridge -->
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+
+        <!-- Phase 2: Integrated Advanced -->
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+
+        <!-- Phase 3: Task Workflow Mastery -->
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+
+        <!-- Phase 4: Production Patterns -->
+        <li class="nav-phase-label">Phase 4: Production Patterns</li>
+        <li><a href="course-12-production-skill-craft.html" class="current">12. Production Skill Craft</a></li>
+        <li><a href="course-13-data-fetching-analysis.html">13. Data Fetching &amp; Analysis</a></li>
+        <li><a href="course-14-runbook-skills.html">14. Runbook Skills</a></li>
+        <li><a href="course-15-infrastructure-operations.html">15. Infrastructure Operations</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

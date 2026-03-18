@@ -1,0 +1,6 @@
+{
+  "team_name": "My Team",
+  "slack_channel": "#team-standup",
+  "standup_time": "09:30",
+  "format_preference": "bullet"
+}

@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Runbook Skills — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 4: Production Patterns</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Runbook Skills &mdash; Symptom-Driven Investigation</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>14</strong> of 15</span>
+      <span class="meta-pill"><strong>Advanced</strong></span>
+      <span class="meta-pill">50 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">Runbook skills turn institutional debugging knowledge into executable investigation procedures. Instead of following a wiki page step-by-step, you build a skill that accepts a symptom, routes through a knowledge base of known failure modes, gathers evidence with multiple tools, and returns a structured findings report &mdash; all in a forked context that keeps your main conversation clean.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Courses 1&ndash;5</strong> (skills fundamentals, descriptions, anatomy, testing, advanced features including <code>context: fork</code> and <code>agent: Explore</code>)</li>
+        <li>Completed <strong>Course 8: Custom Subagents</strong> (forked investigation, agent delegation, tool restrictions)</li>
+        <li>Familiarity with basic debugging workflows (reading logs, checking metrics, tracing errors)</li>
+        <li>Claude Code installed and working (<code>claude</code> command available)</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>What Is a Runbook?</h3>
+
+    <p>A <strong>runbook</strong> is a structured procedure for investigating and resolving operational issues. In traditional operations, runbooks are wiki pages or PDF documents that on-call engineers follow when an alert fires. They capture institutional knowledge: &ldquo;When you see symptom X, check Y, then Z, then escalate if&hellip;&rdquo;</p>
+
+    <p>As a Claude Code skill, a runbook becomes something more powerful: an <strong>executable investigation procedure</strong> that combines human judgment with automated data gathering. Instead of an engineer manually running commands and interpreting output, the skill orchestrates the investigation &mdash; querying logs, checking metrics, reading code, and synthesizing findings into a structured report.</p>
+
+    <h3>Runbooks vs Scripts: Why Judgment Matters</h3>
+
+    <p>A common mistake is treating runbooks as scripts. They are fundamentally different:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th>Script</th>
+          <th>Runbook Skill</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Execution</strong></td>
+          <td>Linear, top-to-bottom</td>
+          <td>Branching, based on findings</td>
+        </tr>
+        <tr>
+          <td><strong>Decision making</strong></td>
+          <td>None &mdash; follows fixed steps</td>
+          <td>Interprets results, chooses next step</td>
+        </tr>
+        <tr>
+          <td><strong>Input</strong></td>
+          <td>Fixed parameters</td>
+          <td>Symptoms that need interpretation</td>
+        </tr>
+        <tr>
+          <td><strong>Output</strong></td>
+          <td>Raw command output</td>
+          <td>Structured findings with analysis</td>
+        </tr>
+        <tr>
+          <td><strong>Adaptability</strong></td>
+          <td>Fails on unexpected input</td>
+          <td>Adjusts investigation path based on evidence</td>
+        </tr>
+        <tr>
+          <td><strong>Knowledge</strong></td>
+          <td>Encoded in conditionals</td>
+          <td>Encoded in natural language guidance</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>A script says: &ldquo;Run <code>kubectl get pods</code>, parse the output, check if any pod is in CrashLoopBackOff.&rdquo; A runbook skill says: &ldquo;Check pod status. If you see crash loops, investigate the logs of the crashing pod. If you see pending pods, check node resources and scheduling constraints. If everything looks healthy, move to the next layer.&rdquo;</p>
+
+    <p>The branching is the key difference. Scripts handle known paths with conditionals. Runbook skills handle unknown paths with judgment &mdash; Claude reads the symptom map, gathers data, interprets what it finds, and decides what to investigate next.</p>
+
+    <h3>Concept 1: Runbook Anatomy</h3>
+
+    <p>Every runbook skill follows a four-part structure:</p>
+
+    <div class="file-tree">Symptom &rarr; Tools &rarr; Query Patterns &rarr; Structured Report</div>
+
+    <ol>
+      <li><strong>Symptom</strong>: The starting point. An error message, an alert, a user report. The skill accepts this as input via <code>$ARGUMENTS</code>.</li>
+      <li><strong>Tools</strong>: The instruments available for investigation. CLI commands (<code>git log</code>, <code>grep</code>, <code>curl</code>), MCP tools (if connected to observability platforms), file reading, and code search.</li>
+      <li><strong>Query Patterns</strong>: What to look for with each tool. Not just &ldquo;run this command&rdquo; but &ldquo;run this command and look for this pattern in the output.&rdquo; The symptom map in <code>references/</code> stores these patterns.</li>
+      <li><strong>Structured Report</strong>: The output format. A template in <code>assets/</code> ensures every investigation produces consistent, actionable findings.</li>
+    </ol>
+
+    <p>The SKILL.md orchestrates these four parts. It tells Claude: &ldquo;Read the symptom, consult the symptom map to determine your investigation path, use the listed tools to gather evidence, and produce a report using the template.&rdquo;</p>
+
+    <h3>Concept 2: Symptom Routing</h3>
+
+    <p>Symptom routing is the decision tree that maps symptoms to investigation paths. It answers the question: &ldquo;Given this symptom, what should I check first?&rdquo;</p>
+
+    <p>A symptom map is a reference file (<code>references/symptom-map.md</code>) that contains entries like:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>## High Latency / Slow Responses
+
+### Tools to Use
+- `git log --since="2 days ago" --oneline` -- check recent deployments
+- `grep -r "timeout" --include="*.yaml"` -- find timeout configurations
+- Check application logs for slow query warnings
+
+### What to Look For
+- Recent code changes to hot paths
+- Database query changes
+- New middleware or interceptors
+- Changed timeout or pool configurations
+
+### Common Root Causes
+- N+1 query introduced in recent commit
+- Missing database index after schema change
+- Connection pool exhaustion
+- External service degradation</pre>
+    </div>
+
+    <p>The skill reads this map and matches the user&rsquo;s symptom description to the most relevant category. This is where Claude&rsquo;s judgment comes in &mdash; a symptom like &ldquo;API responses are slow after yesterday&rsquo;s deploy&rdquo; maps to both &ldquo;High Latency&rdquo; and &ldquo;Deployment-Related Issues.&rdquo; Claude reads both sections and synthesizes an investigation plan.</p>
+
+    <p><strong>Why a reference file instead of inline content?</strong> Three reasons:</p>
+
+    <ol>
+      <li><strong>Maintainability</strong>: The symptom map grows as your team encounters new failure modes. A separate file is easier to update than editing the SKILL.md.</li>
+      <li><strong>Progressive disclosure</strong>: The SKILL.md stays focused on the investigation workflow. The symptom map provides depth when needed.</li>
+      <li><strong>Reusability</strong>: Multiple skills can reference the same symptom map. A <code>service-debugger</code> skill and an <code>incident-responder</code> skill might share the same diagnostic knowledge.</li>
+    </ol>
+
+    <h3>Concept 3: Multi-Tool Investigation</h3>
+
+    <p>Real investigations require multiple tools working together. A single <code>grep</code> or a single log query rarely tells the whole story. The power of a runbook skill is composing tools in sequence, where each tool&rsquo;s output informs what you check next.</p>
+
+    <p><strong>The investigation funnel pattern:</strong></p>
+
+    <div class="file-tree">Wide sweep (what&rsquo;s happening?)
+    &darr; narrow based on findings
+Targeted search (where is it happening?)
+    &darr; narrow based on findings
+Deep dive (why is it happening?)
+    &darr; confirm with evidence
+Root cause (what specifically broke?)</div>
+
+    <p>At each level, different tools are appropriate:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Investigation Phase</th>
+          <th>Tools</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Wide sweep</strong></td>
+          <td><code>git log</code>, service status, recent alerts</td>
+          <td>Establish timeline, identify changes</td>
+        </tr>
+        <tr>
+          <td><strong>Targeted search</strong></td>
+          <td><code>grep</code>, <code>Glob</code>, log queries</td>
+          <td>Find specific error patterns</td>
+        </tr>
+        <tr>
+          <td><strong>Deep dive</strong></td>
+          <td><code>Read</code> specific files, trace analysis</td>
+          <td>Understand the code path</td>
+        </tr>
+        <tr>
+          <td><strong>Root cause</strong></td>
+          <td><code>git diff</code>, <code>git blame</code>, config comparison</td>
+          <td>Pinpoint the exact change</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Ordering matters.</strong> Always gather context before diving deep. A common anti-pattern is jumping straight to reading code without first establishing when the problem started and what changed. The timeline often reveals the root cause faster than code analysis.</p>
+
+    <p><strong>Example investigation sequence:</strong></p>
+
+    <div class="file-tree">1. git log --since="3 days ago" --oneline
+   &rarr; Found: deploy abc123 "Refactor auth middleware" 2 days ago
+
+2. grep -rn "AuthMiddleware" src/
+   &rarr; Found: src/middleware/auth.ts, src/routes/api.ts
+
+3. git diff abc123~1..abc123 -- src/middleware/auth.ts
+   &rarr; Found: Changed from sync to async, added new await
+
+4. Read src/middleware/auth.ts (current version)
+   &rarr; Found: Missing error handling on the new async path
+
+5. Root cause: Unhandled promise rejection in auth middleware
+   after async refactor in commit abc123</div>
+
+    <p>Each step narrows the investigation. The skill guides Claude through this funnel, but Claude decides when to move to the next phase based on what it finds.</p>
+
+    <h3>Concept 4: Structured Report Output</h3>
+
+    <p>Investigations are only useful if the findings are communicated clearly. A template in <code>assets/report-template.md</code> ensures every investigation produces consistent output that the team can act on.</p>
+
+    <p>The template includes:</p>
+
+    <ul>
+      <li><strong>Summary</strong>: One sentence describing the finding. Forces clarity.</li>
+      <li><strong>Severity</strong>: P0&ndash;P4 classification. Tells the team how urgently to respond.</li>
+      <li><strong>Symptom</strong>: What was observed. Links the finding back to the original alert.</li>
+      <li><strong>Investigation Steps</strong>: What was checked, in order. Creates an audit trail.</li>
+      <li><strong>Root Cause</strong>: Determined or suspected. Honest about uncertainty.</li>
+      <li><strong>Evidence</strong>: Specific log lines, code references, metrics. Backs up the finding.</li>
+      <li><strong>Recommended Actions</strong>: Immediate fixes and follow-up tasks. Actionable, not vague.</li>
+      <li><strong>Timeline</strong>: When things happened. Essential for incident reviews.</li>
+    </ul>
+
+    <p><strong>Why templates matter for AI-driven investigations:</strong></p>
+
+    <p>Without a template, Claude produces free-form text that varies in structure and completeness with every run. With a template, every report has the same sections, making it easy to scan, compare across incidents, and ensure nothing is missed.</p>
+
+    <p>The template also acts as a <strong>completeness check</strong>. If Claude can&rsquo;t fill in the &ldquo;Evidence&rdquo; section, the investigation isn&rsquo;t done. If the &ldquo;Root Cause&rdquo; is &ldquo;Undetermined,&rdquo; the report should explain what was checked and what remains.</p>
+
+    <h3>Concept 5: Forked Investigation</h3>
+
+    <p>Investigations are verbose. They involve reading many files, running many commands, and generating intermediate output that clutters the main conversation. This is exactly the use case for <code>context: fork</code> from Course 5.</p>
+
+    <p>When <code>service-debugger</code> runs in a forked context:</p>
+
+    <ol>
+      <li>The main conversation sends the symptom to the skill</li>
+      <li>A subagent (Explore) spins up with its own context window</li>
+      <li>The subagent reads the symptom map, runs tools, gathers evidence</li>
+      <li>The subagent produces the structured report</li>
+      <li>Only the final report returns to the main conversation</li>
+      <li>All intermediate work (file reads, grep results, log output) stays in the subagent&rsquo;s context</li>
+    </ol>
+
+    <p><strong>Why this matters:</strong></p>
+
+    <ul>
+      <li><strong>Context preservation</strong>: Your main conversation stays focused on the problem, not filled with raw grep output and log lines</li>
+      <li><strong>Isolation</strong>: The investigation can&rsquo;t accidentally modify files (Explore agent is read-only)</li>
+      <li><strong>Cost efficiency</strong>: The Explore agent uses Haiku, which is faster and cheaper for the data-gathering phase</li>
+      <li><strong>Repeatability</strong>: You can run the same investigation multiple times without context buildup</li>
+    </ul>
+
+    <p><strong>The fork + report pattern:</strong></p>
+
+    <div class="yaml-block">context: fork
+agent: Explore</div>
+
+    <p>Combined with the report template, this creates a clean separation:</p>
+
+    <ul>
+      <li>The <strong>subagent</strong> does the messy work (reading files, running commands, interpreting output)</li>
+      <li>The <strong>main conversation</strong> receives a clean, structured report</li>
+      <li>The <strong>template</strong> ensures the report contains everything needed to act</li>
+    </ul>
+
+    <p>This pattern &mdash; forked investigation with structured output &mdash; is reusable across many runbook skills. An incident responder, a performance analyzer, a dependency auditor, and a security scanner all follow the same shape: gather data in isolation, return structured findings.</p>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li><strong>Course 5</strong>: <code>context: fork</code>, <code>agent: Explore</code>, <code>allowed-tools</code> &mdash; the isolation primitives used by runbook skills</li>
+        <li><strong>Course 8</strong>: Custom subagents, tool restrictions, the delegation pattern</li>
+        <li><strong>Course 3</strong>: <code>references/</code> and <code>assets/</code> directories &mdash; progressive disclosure for investigation knowledge</li>
+        <li><strong>Skills docs</strong>: &ldquo;Run skills in a subagent&rdquo; section &mdash; how forked execution works</li>
+        <li><strong>Skills docs</strong>: &ldquo;Pass arguments to skills&rdquo; section &mdash; <code>$ARGUMENTS</code> for symptom input</li>
+      </ul>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>A <strong>service-debugger</strong> skill that investigates operational issues using a symptom-driven approach. The skill:</p>
+
+    <ol>
+      <li>Accepts an error signature, alert description, or symptom as input via <code>$ARGUMENTS</code></li>
+      <li>Reads <code>references/symptom-map.md</code> to determine the investigation path</li>
+      <li>Uses multiple tools (git log, grep, file reading, CLI commands) to gather evidence</li>
+      <li>Produces a structured findings report using <code>assets/report-template.md</code></li>
+      <li>Runs in a forked Explore agent to keep the main conversation clean</li>
+    </ol>
+
+    <p>Here&rsquo;s the file structure:</p>
+
+    <div class="file-tree">service-debugger/
+&#9500;&#9472;&#9472; SKILL.md                        # Investigation orchestration
+&#9500;&#9472;&#9472; references/
+&#9474;   &#9492;&#9472;&#9472; symptom-map.md              # Symptom-to-investigation mappings
+&#9492;&#9472;&#9472; assets/
+    &#9492;&#9472;&#9472; report-template.md          # Structured findings report template</div>
+
+    <p>This skill demonstrates all five concepts from this course:</p>
+
+    <ul>
+      <li><strong>Runbook anatomy</strong>: Symptom &rarr; tools &rarr; query patterns &rarr; structured report</li>
+      <li><strong>Symptom routing</strong>: The symptom map drives the investigation path</li>
+      <li><strong>Multi-tool investigation</strong>: Composed tool usage with progressive narrowing</li>
+      <li><strong>Structured report output</strong>: Template-driven consistent findings</li>
+      <li><strong>Forked investigation</strong>: Isolated execution with clean report return</li>
+    </ul>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Understand the Design Decisions</span>
+      <div class="step-content">
+        <p>Before writing code, understand why each piece exists:</p>
+
+        <table class="tool-table">
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Purpose</th>
+              <th>Design Choice</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>SKILL.md</code></td>
+              <td>Orchestrate investigation</td>
+              <td>Fork into Explore agent for isolation</td>
+            </tr>
+            <tr>
+              <td><code>references/symptom-map.md</code></td>
+              <td>Map symptoms to tools</td>
+              <td>Separate file for maintainability</td>
+            </tr>
+            <tr>
+              <td><code>assets/report-template.md</code></td>
+              <td>Structure output</td>
+              <td>Template ensures completeness</td>
+            </tr>
+            <tr>
+              <td><code>$ARGUMENTS</code></td>
+              <td>Accept symptom input</td>
+              <td>Free-form text, not structured params</td>
+            </tr>
+            <tr>
+              <td><code>context: fork</code></td>
+              <td>Isolate investigation</td>
+              <td>Keeps main context clean</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The symptom input is deliberately free-form. Users might say &ldquo;API is returning 500 errors&rdquo; or paste an alert like <code>CRITICAL: service-auth response time &gt;5s</code>. Claude interprets the symptom and matches it against the symptom map categories. This is judgment-based routing, not keyword matching.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Create the Symptom Map</span>
+      <div class="step-content">
+        <p>The symptom map is the knowledge base that drives investigation routing. Create <code>references/symptom-map.md</code> with categories for common failure modes.</p>
+
+        <p>Study the provided symptom map file. Notice the structure of each category:</p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <pre>## Category Name
+
+### Tools to Use
+- Specific commands with explanations
+
+### What to Look For
+- Patterns that indicate this category
+
+### Common Root Causes
+- Known causes from past incidents
+
+### Escalation Criteria
+- When to stop investigating and escalate</pre>
+        </div>
+
+        <p>Each category is a mini-runbook within the larger map. When Claude reads a symptom like &ldquo;users are getting 503 errors,&rdquo; it finds the &ldquo;5xx Errors / Service Crashes&rdquo; category and follows that section&rsquo;s guidance.</p>
+
+        <p><strong>Key design principle</strong>: The symptom map should be exhaustive enough to cover common cases but not so detailed that it overwhelms. Seven to eight categories with 10&ndash;15 items each is a good balance. You can always add more categories as your team encounters new failure modes.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Create the Report Template</span>
+      <div class="step-content">
+        <p>The report template defines the output structure. Create <code>assets/report-template.md</code> with placeholder markers that Claude fills in during the investigation.</p>
+
+        <p>Study the provided template file. Notice the placeholder format:</p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <pre>**Summary**: {{one-line finding}}
+**Severity**: {{P0-P4 with justification}}</pre>
+        </div>
+
+        <p>The <code>{{placeholder}}</code> markers serve two purposes:</p>
+
+        <ol>
+          <li>They tell Claude exactly what to fill in</li>
+          <li>They create a visual distinction between template structure and content</li>
+        </ol>
+
+        <p>The severity scale (P0&ndash;P4) is defined in the template itself, so Claude can classify consistently without needing external context.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Create the SKILL.md</span>
+      <div class="step-content">
+        <p>The SKILL.md orchestrates the entire investigation. Study the provided file and note the key sections:</p>
+
+        <ol>
+          <li><strong>Frontmatter</strong>: Sets up forked execution with Explore agent</li>
+          <li><strong>Investigation Workflow</strong>: Step-by-step procedure with decision points</li>
+          <li><strong>Symptom Matching</strong>: Instructions to read and match against the symptom map</li>
+          <li><strong>Tool Usage</strong>: Ordered data gathering from broad to narrow</li>
+          <li><strong>Report Generation</strong>: Instructions to use the template</li>
+          <li><strong>Gotchas</strong>: Common pitfalls and how to avoid them</li>
+        </ol>
+
+        <p>The SKILL.md doesn&rsquo;t contain the investigation knowledge (that&rsquo;s in the symptom map) or the output format (that&rsquo;s in the template). It contains the <strong>procedure</strong> &mdash; how to connect input symptoms to the right knowledge and produce the right output.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Install the Skill</span>
+      <div class="step-content">
+        <p>Copy the skill to your personal skills directory:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>cp -r courses/course-14-runbook-skills/skill/service-debugger ~/.claude/skills/service-debugger</div>
+
+        <p>Verify the structure:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>ls -R ~/.claude/skills/service-debugger/</div>
+
+        <p>You should see:</p>
+
+        <div class="file-tree">SKILL.md
+assets/
+references/
+
+assets:
+report-template.md
+
+references:
+symptom-map.md</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Test with a Simulated Symptom</span>
+      <div class="step-content">
+        <p>Open Claude Code in any project directory and test the skill:</p>
+
+        <div class="prompt-box-dark">/service-debugger API responses are returning 500 errors after this morning&rsquo;s deployment</div>
+
+        <p>Watch for:</p>
+
+        <ol>
+          <li>The skill loads and forks into an Explore agent</li>
+          <li>Claude reads <code>references/symptom-map.md</code> and matches to &ldquo;5xx Errors / Service Crashes&rdquo;</li>
+          <li>Claude runs investigation tools: <code>git log</code>, <code>grep</code> for error patterns, reads relevant files</li>
+          <li>Claude produces a report following the template structure</li>
+          <li>The report returns to your main conversation &mdash; clean and structured</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Test with Different Symptom Categories</span>
+      <div class="step-content">
+        <p>Try several different symptoms to exercise different paths in the symptom map:</p>
+
+        <div class="prompt-box-dark">/service-debugger Memory usage is climbing steadily and the service restarts every few hours</div>
+
+        <div class="prompt-box-dark">/service-debugger Users are reporting stale data &mdash; changes they make don&rsquo;t appear for several minutes</div>
+
+        <div class="prompt-box-dark">/service-debugger Connection timeouts to the database started appearing 30 minutes ago</div>
+
+        <p>Each should route through a different section of the symptom map and produce a report with different investigation steps. Verify that:</p>
+
+        <ul>
+          <li>The investigation steps match the symptom category (not a generic checklist)</li>
+          <li>The tools used are appropriate for the symptom type</li>
+          <li>The report severity makes sense for the symptom described</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">8</span>
+      <span class="step-title">Test the Forked Context Isolation</span>
+      <div class="step-content">
+        <p>After running an investigation, test that the main context is clean:</p>
+
+        <div class="prompt-box-dark">What files did you just read?</div>
+
+        <p>Claude should not know the details of the investigation &mdash; file reads, grep results, and intermediate findings all happened in the forked Explore agent&rsquo;s context. Your main conversation only has the final report.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">9</span>
+      <span class="step-title">Customize the Symptom Map</span>
+      <div class="step-content">
+        <p>Add a new symptom category specific to your project. For example, if you work with a message queue:</p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <pre>## Message Queue Backlog / Consumer Lag
+
+### Tools to Use
+- Check queue depth metrics
+- `grep -rn "consumer" --include="*.ts"` -- find consumer implementations
+- `git log --since="2 days ago" -- src/consumers/` -- recent consumer changes
+
+### What to Look For
+- Increased message processing time
+- Consumer error rates
+- Partition rebalancing events
+- Memory pressure on consumer instances
+
+### Common Root Causes
+- Slow downstream dependency blocking consumers
+- Deserialization error causing message retry loops
+- Consumer group rebalancing after deployment
+- Message schema change without consumer update
+
+### Escalation Criteria
+- Consumer lag exceeding 1 hour
+- Dead letter queue growing rapidly
+- Multiple consumer instances crashing</pre>
+        </div>
+
+        <p>Run the skill with a queue-related symptom and verify it picks up your new category.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">10</span>
+      <span class="step-title">Extend the Report Template</span>
+      <div class="step-content">
+        <p>Add a section to the report template for your team&rsquo;s needs. Common additions:</p>
+
+        <ul>
+          <li><strong>Affected Customers</strong>: Scope of impact</li>
+          <li><strong>Related Incidents</strong>: Links to past similar incidents</li>
+          <li><strong>Rollback Assessment</strong>: Whether a rollback is appropriate and how to do it</li>
+          <li><strong>Communication</strong>: Who needs to be notified</li>
+        </ul>
+
+        <p>Edit <code>assets/report-template.md</code> to add these sections and test that the skill includes them in its output.</p>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li>
+        <p><strong>Build and test the service-debugger skill</strong></p>
+        <p>Install the skill from the walkthrough. Test it with at least three different symptom descriptions that route through different categories in the symptom map. Verify that each investigation follows a different path and the reports are structured consistently.</p>
+      </li>
+      <li>
+        <p><strong>Extend the symptom map</strong></p>
+        <p>Add two new symptom categories specific to your tech stack or domain. If you use a specific database, add a &ldquo;Database Performance&rdquo; category with the right CLI tools. If you use Kubernetes, add a &ldquo;Pod Scheduling Failures&rdquo; category. Test that the skill correctly routes to your new categories.</p>
+      </li>
+      <li>
+        <p><strong>Customize the report template</strong></p>
+        <p>Modify the report template to include a &ldquo;Rollback Assessment&rdquo; section that evaluates whether the issue can be resolved by rolling back a recent deployment. Include fields for: rollback candidate (commit/version), estimated rollback time, rollback risk, and recommendation. Test with a deployment-related symptom.</p>
+      </li>
+      <li>
+        <p><strong>Create a parallel runbook skill</strong></p>
+        <p>Build a second runbook skill &mdash; for example, a <code>performance-profiler</code> or <code>dependency-auditor</code> &mdash; that reuses the same symptom map but produces a different report format. This demonstrates the reusability of the reference file pattern. The new skill should have its own <code>SKILL.md</code> and <code>assets/report-template.md</code> but share or extend the symptom map.</p>
+      </li>
+      <li>
+        <p><strong>Compare forked vs inline investigation</strong></p>
+        <p>Make a copy of the <code>service-debugger</code> skill without <code>context: fork</code> (remove the <code>context</code> and <code>agent</code> fields). Run both versions with the same symptom. Compare: How does the main conversation differ after each? Which is more practical for a quick investigation vs a thorough one? Document your findings.</p>
+      </li>
+      <li>
+        <p><strong>Build an investigation chain</strong></p>
+        <p>Create a workflow where the <code>service-debugger</code> skill&rsquo;s output feeds into a follow-up action. For example: run the investigation, then based on the severity in the report, either create a GitHub issue (<code>gh issue create</code>), page the on-call engineer, or add it to the backlog. This extends the single-skill runbook into a multi-step incident response workflow.</p>
+      </li>
+    </ol>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>~/.claude/skills/service-debugger/SKILL.md</code> exists with valid YAML frontmatter</li>
+      <li><code>~/.claude/skills/service-debugger/references/symptom-map.md</code> exists with 5+ symptom categories</li>
+      <li><code>~/.claude/skills/service-debugger/assets/report-template.md</code> exists with all required sections</li>
+      <li>SKILL.md has <code>context: fork</code> and <code>agent: Explore</code> in frontmatter</li>
+      <li>SKILL.md references the symptom map and report template by path</li>
+      <li>Running <code>/service-debugger &lt;symptom&gt;</code> invokes the skill and forks into an Explore agent</li>
+      <li>The investigation reads the symptom map and routes to the correct category</li>
+      <li>Multiple tools are used during investigation (git log, grep, file reads)</li>
+      <li>The investigation narrows progressively (broad sweep &rarr; targeted search &rarr; deep dive)</li>
+      <li>The output report follows the template structure with all sections filled in</li>
+      <li>Severity classification (P0&ndash;P4) matches the symptom described</li>
+      <li>The main conversation context stays clean after investigation (forked context works)</li>
+      <li>Different symptoms route through different investigation paths (not a generic checklist)</li>
+      <li>The report includes specific evidence (file paths, log excerpts, commit references)</li>
+      <li>Running the investigation a second time with a different symptom produces a differently structured investigation</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> In <strong>Course 15: Infrastructure Operations Skills &mdash; Guardrails for Dangerous Work</strong>, you&rsquo;ll learn to build skills for tasks with real consequences: orphan cleanup, dependency management, cost investigation. You&rsquo;ll implement on-demand safety hooks that activate only when a skill is called (the <code>/careful</code> pattern), soak periods and confirmation gates for multi-phase operations, dry-run mode as the default with explicit <code>--execute</code> flags for destructive actions, and audit logging for recording what was changed, by whom, and when. You&rsquo;ll build a <code>resource-cleanup</code> skill with safety guardrails and a <code>careful</code> hook-as-skill.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-13-data-fetching-analysis.html" class="prev">Data Fetching &amp; Analysis</a>
+      <a href="course-15-infrastructure-operations.html" class="next">Infrastructure Operations</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+        <li class="nav-phase-label">Phase 4: Production Patterns</li>
+        <li><a href="course-12-production-skill-craft.html">12. Production Skill Craft</a></li>
+        <li><a href="course-13-data-fetching-analysis.html">13. Data Fetching &amp; Analysis</a></li>
+        <li><a href="course-14-runbook-skills.html" class="current">14. Runbook Skills</a></li>
+        <li><a href="course-15-infrastructure-operations.html">15. Infrastructure Operations</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

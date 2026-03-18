@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infrastructure Operations — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 4: Production Patterns</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Infrastructure Operations Skills &mdash; Guardrails for Dangerous Work</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>15</strong> of 15</span>
+      <span class="meta-pill"><strong>Advanced</strong></span>
+      <span class="meta-pill">50 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">Operations skills perform destructive actions with real consequences &mdash; deleting branches, removing files, pruning dependencies. Unlike code-generation skills, mistakes can&rsquo;t simply be undone. This course teaches you four safety patterns &mdash; on-demand hooks, soak periods, dry-run defaults, and audit logging &mdash; that make operations skills safe by default and dangerous only by explicit request.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Courses 1&ndash;7 completed (skill fundamentals, descriptions, anatomy, testing, advanced features, workflows, hooks)</li>
+        <li>Course 12 completed (production craft and memory patterns)</li>
+        <li>Familiarity with <code>jq</code> for JSON parsing</li>
+        <li>A project with some accumulated cruft (stale branches, unused files) to test against</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>Operations Skills Are Different</h3>
+
+    <p>Most skills help Claude <em>build</em> things &mdash; write code, create files, generate configurations. Operations skills help Claude <em>clean up</em> things &mdash; remove stale branches, delete orphaned assets, prune unused dependencies. The difference matters because operations skills perform <strong>destructive actions with real consequences</strong>.</p>
+
+    <p>If a code-generation skill produces bad output, you delete it and try again. If a cleanup skill deletes the wrong branch, that work is gone. This asymmetry demands a different design philosophy: operations skills must be <strong>safe by default</strong> and <strong>dangerous only by explicit request</strong>.</p>
+
+    <p>The core principle:</p>
+
+    <blockquote>An operations skill should never destroy anything the first time you run it. It should <em>report</em> what it found, <em>wait</em> for you to review, and <em>act</em> only after you confirm.</blockquote>
+
+    <p>This course teaches you four patterns that enforce this principle: on-demand safety hooks, soak periods, dry-run defaults, and audit logging.</p>
+
+    <h3>The On-Demand Hook Pattern</h3>
+
+    <p>In Course 7, you learned about hooks &mdash; shell scripts that fire at specific points in Claude&rsquo;s lifecycle. Those hooks were configured globally or per-project. They&rsquo;re always active.</p>
+
+    <p>Operations skills need a different approach: <strong>session-scoped hooks</strong> that activate only when a specific skill is called. You don&rsquo;t want destructive-command blocking running during normal development. You want it running <em>only</em> during a cleanup operation, when the stakes are high.</p>
+
+    <p>This is the on-demand hook pattern. A skill declares hooks in its YAML frontmatter:</p>
+
+    <div class="yaml-block">---
+name: resource-cleanup
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: ".claude/hooks/block-destructive.sh"
+---</div>
+
+    <p>When Claude loads this skill, the hook activates. When the skill completes, the hook deactivates. The hook exists only for the duration of the operation.</p>
+
+    <p>Two important variations of this pattern:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Pattern</th>
+          <th>What it does</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>/careful</code></td>
+          <td>Blocks destructive commands for the session</td>
+          <td><code>rm -rf</code>, <code>git push --force</code>, <code>DROP TABLE</code></td>
+        </tr>
+        <tr>
+          <td><code>/freeze</code></td>
+          <td>Blocks file edits outside a specific directory</td>
+          <td>Only allows changes in <code>src/feature-x/</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Both are &ldquo;pure hook-as-skill&rdquo; patterns &mdash; the entire skill is just a safety activation. The <code>/careful</code> pattern is one of the skills you&rsquo;ll build in this course.</p>
+
+    <h3>Soak Periods and Confirmation Gates</h3>
+
+    <p>A soak period is a deliberate pause between <em>detecting</em> a problem and <em>acting</em> on it. The flow looks like this:</p>
+
+    <div class="file-tree">Phase 1: DETECT
+    Scan for orphaned resources
+    Build a report of what was found
+        |
+        v
+Phase 2: REPORT
+    Present findings to the user
+    Show what would be deleted/changed
+    Show resource age, size, dependencies
+        |
+        v
+Phase 3: WAIT (the soak period)
+    Pause for user review
+    User can ask questions about specific items
+    User can exclude items from the action list
+        |
+        v
+Phase 4: CONFIRM
+    Explicitly ask: &ldquo;Proceed with cleanup?&rdquo;
+    Require affirmative response
+    No timeout-based auto-proceed
+        |
+        v
+Phase 5: EXECUTE
+    Perform the destructive actions
+    Log every action taken
+    Report results</div>
+
+    <p>The soak period (Phase 3) is the critical safety feature. It gives the user time to:</p>
+
+    <ul>
+      <li>Spot items that shouldn&rsquo;t be deleted</li>
+      <li>Ask Claude for more context about specific resources</li>
+      <li>Modify the action list before proceeding</li>
+    </ul>
+
+    <p><strong>Never skip the soak period.</strong> Even if the user says &ldquo;just clean everything up,&rdquo; the skill should still report first. The user might not realize what &ldquo;everything&rdquo; includes.</p>
+
+    <h3>Dry-Run as Default</h3>
+
+    <p>Dry-run mode is the soak period&rsquo;s complement. Where soak periods add a pause, dry-run mode changes the skill&rsquo;s <em>default behavior</em> entirely:</p>
+
+    <ul>
+      <li><strong>Default mode (dry-run)</strong>: Scan, detect, and report. Do not modify anything.</li>
+      <li><strong>Execute mode</strong>: Scan, detect, report, confirm, and then actually perform the actions.</li>
+    </ul>
+
+    <p>The user switches from dry-run to execute mode with an explicit flag:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span># Dry run (default) -- just report
+<span class="prompt">$ </span>/resource-cleanup
+
+<span class="prompt">$ </span># Actually do the cleanup
+<span class="prompt">$ </span>/resource-cleanup --execute</div>
+
+    <p>This is safer than a confirmation prompt alone. A confirmation prompt asks &ldquo;do you want to proceed?&rdquo; when the user has <em>already expressed intent</em> to clean up. Dry-run mode requires the user to <em>re-invoke the skill with a different argument</em>, which is a stronger signal of intent.</p>
+
+    <p>Design rule: <strong>if your skill can delete, overwrite, or irreversibly modify anything, it should default to dry-run.</strong></p>
+
+    <h3>Audit Logging</h3>
+
+    <p>When an operations skill performs destructive actions, it should record what happened. Audit logs answer three questions:</p>
+
+    <ul>
+      <li><strong>What</strong> was changed or deleted?</li>
+      <li><strong>When</strong> did it happen?</li>
+      <li><strong>What was the context</strong> (which skill, what arguments, what was the state before the change)?</li>
+    </ul>
+
+    <p>The simplest audit pattern writes a structured log entry to a file:</p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) | resource-cleanup | deleted branch: feature/old-experiment | age: 47 days | last commit: abc1234" &gt;&gt; .claude/audit.log</div>
+
+    <p>For skills that run repeatedly, structure the log as one entry per operation with nested details:</p>
+
+    <div class="file-tree">## 2026-03-18T14:30:00Z -- resource-cleanup --execute
+- Deleted branch: feature/old-experiment (47 days stale, last commit abc1234)
+- Deleted branch: fix/typo-in-readme (92 days stale, last commit def5678)
+- Removed orphaned config: .eslintrc.legacy (not referenced by any script)
+- Skipped: feature/maybe-later (excluded by user)</div>
+
+    <p>You can also use the skill memory patterns from Course 12 to store audit data in <code>.claude/memory/</code> for retrieval in future sessions. This creates a persistent operational history that Claude can reference when making decisions.</p>
+
+    <h3>Combining the Patterns</h3>
+
+    <p>In practice, you combine all four patterns. Here&rsquo;s how they fit together for a resource-cleanup skill:</p>
+
+    <div class="file-tree">User invokes /resource-cleanup
+    |
+    v
+On-demand hook activates (blocks rm -rf, force-push, etc.)
+    |
+    v
+Dry-run mode: scan and report orphaned resources
+    |
+    v
+User reviews report, asks questions (soak period)
+    |
+    v
+User re-invokes with /resource-cleanup --execute
+    |
+    v
+On-demand hook still active (destructive commands blocked
+UNLESS the skill explicitly confirms each one)
+    |
+    v
+Execute with confirmation gates for each destructive action
+    |
+    v
+Audit log records everything that was changed
+    |
+    v
+Hook deactivates when skill completes</div>
+
+    <p>This layered approach means that even if one safety mechanism fails, the others catch the problem. The hook blocks accidental destructive commands. The dry-run default prevents accidental execution. The confirmation gate requires explicit approval. The audit log creates accountability.</p>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <ul>
+        <li><strong>Hooks reference</strong>: <code>~/.claude-code-docs/docs/hooks.md</code> &mdash; Full event schemas, JSON I/O, decision control</li>
+        <li><strong>Hooks guide</strong>: <code>~/.claude-code-docs/docs/hooks-guide.md</code> &mdash; Setup walkthrough, common patterns, troubleshooting</li>
+        <li><strong>Course 7</strong>: Hooks &mdash; Deterministic Control over Claude&rsquo;s Behavior</li>
+        <li><strong>Course 12</strong>: Production Craft &mdash; Memory patterns for audit trails</li>
+      </ul>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>You&rsquo;ll create two skills that demonstrate operations guardrails:</p>
+
+    <ol>
+      <li><strong><code>resource-cleanup</code></strong> &mdash; A full-featured operations skill that finds orphaned resources (stale git branches, unused config files, orphaned assets), reports them with a soak period, and cleans up only after explicit user confirmation. Includes an on-demand <code>PreToolUse</code> hook that blocks destructive commands unless the user has confirmed. Defaults to dry-run mode.</li>
+      <li><strong><code>careful</code></strong> &mdash; A minimal on-demand safety hook skill. When invoked, it activates destructive-command blocking for the duration of the session. Demonstrates the &ldquo;pure hook-as-skill&rdquo; pattern &mdash; a skill whose entire purpose is to activate a safety hook.</li>
+    </ol>
+
+    <p>The file structure:</p>
+
+    <div class="file-tree">skill/
+&#9500;&#9472;&#9472; resource-cleanup/
+&#9474;   &#9500;&#9472;&#9472; SKILL.md
+&#9474;   &#9492;&#9472;&#9472; hooks/
+&#9474;       &#9492;&#9472;&#9472; block-destructive.sh
+&#9492;&#9472;&#9472; careful/
+    &#9492;&#9472;&#9472; SKILL.md</div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Build the block-destructive hook</span>
+      <div class="step-content">
+        <p>This is the shared safety hook used by both skills. It intercepts every Bash command and checks for dangerous patterns.</p>
+
+        <p>Create <code>skill/resource-cleanup/hooks/block-destructive.sh</code>:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">skill/resource-cleanup/hooks/block-destructive.sh</div>
+          <pre>#!/bin/bash
+# block-destructive.sh -- PreToolUse hook for Bash
+# Blocks destructive commands unless a CONFIRMED marker is present.
+#
+# Dangerous patterns blocked:
+#   - rm -rf (recursive forced deletion)
+#   - git push --force / git push -f (force push)
+#   - DROP TABLE / DROP DATABASE (SQL destruction)
+#   - DELETE FROM (SQL mass deletion)
+#   - git reset --hard (discard uncommitted changes)
+#   - git clean -f (delete untracked files)
+#
+# To proceed with a legitimate destructive command, the skill must
+# include CONFIRMED_DESTRUCTIVE in a comment within the command.
+# Example: rm -rf old-dir/ # CONFIRMED_DESTRUCTIVE
+
+INPUT=$(cat)
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+
+if [ -z "$COMMAND" ]; then
+  exit 0
+fi
+
+# If the command contains the confirmation marker, allow it
+if echo "$COMMAND" | grep -q 'CONFIRMED_DESTRUCTIVE'; then
+  exit 0
+fi
+
+# --- Check for destructive patterns ---
+
+# rm -rf
+if echo "$COMMAND" | grep -qE 'rm\s+(-[a-zA-Z]*r[a-zA-Z]*f|(-[a-zA-Z]*f[a-zA-Z]*r))\b'; then
+  echo "BLOCKED: 'rm -rf' detected. Recursive forced deletion is not allowed without confirmation. If this is intentional, re-run the command with a '# CONFIRMED_DESTRUCTIVE' comment." &gt;&amp;2
+  exit 2
+fi
+
+# git push --force / -f
+if echo "$COMMAND" | grep -qE 'git\s+push\s+.*(-f|--force)\b'; then
+  echo "BLOCKED: 'git push --force' detected. Force pushing is not allowed without confirmation. If this is intentional, re-run the command with a '# CONFIRMED_DESTRUCTIVE' comment." &gt;&amp;2
+  exit 2
+fi
+
+# DROP TABLE / DROP DATABASE
+if echo "$COMMAND" | grep -qiE '\bDROP\s+(TABLE|DATABASE)\b'; then
+  echo "BLOCKED: 'DROP TABLE/DATABASE' detected. SQL destruction is not allowed without confirmation. If this is intentional, re-run the command with a '# CONFIRMED_DESTRUCTIVE' comment." &gt;&amp;2
+  exit 2
+fi
+
+# DELETE FROM
+if echo "$COMMAND" | grep -qiE '\bDELETE\s+FROM\b'; then
+  echo "BLOCKED: 'DELETE FROM' detected. SQL mass deletion is not allowed without confirmation. If this is intentional, re-run the command with a '# CONFIRMED_DESTRUCTIVE' comment." &gt;&amp;2
+  exit 2
+fi
+
+# git reset --hard
+if echo "$COMMAND" | grep -qE 'git\s+reset\s+--hard'; then
+  echo "BLOCKED: 'git reset --hard' detected. Discarding uncommitted changes is not allowed without confirmation. If this is intentional, re-run the command with a '# CONFIRMED_DESTRUCTIVE' comment." &gt;&amp;2
+  exit 2
+fi
+
+# git clean -f
+if echo "$COMMAND" | grep -qE 'git\s+clean\s+.*-[a-zA-Z]*f'; then
+  echo "BLOCKED: 'git clean -f' detected. Deleting untracked files is not allowed without confirmation. If this is intentional, re-run the command with a '# CONFIRMED_DESTRUCTIVE' comment." &gt;&amp;2
+  exit 2
+fi
+
+# All checks passed
+exit 0</pre>
+        </div>
+
+        <p>Key design decisions:</p>
+
+        <ul>
+          <li><strong>Confirmation marker</strong>: The <code>CONFIRMED_DESTRUCTIVE</code> pattern lets the skill bypass the hook when the user has explicitly confirmed. The hook blocks <em>accidental</em> destructive commands, not <em>confirmed</em> ones.</li>
+          <li><strong>Broad pattern matching</strong>: <code>rm -rf</code> catches both <code>rm -rf</code> and <code>rm -rfi</code> and other flag orderings. The regex handles flag combinations like <code>-rf</code>, <code>-fr</code>, <code>-rfi</code>, etc.</li>
+          <li><strong>Case-insensitive SQL matching</strong>: <code>DROP TABLE</code> catches <code>drop table</code>, <code>Drop Table</code>, etc.</li>
+          <li><strong>Descriptive error messages</strong>: Each blocked command explains <em>what</em> was detected and <em>how</em> to proceed. This feedback goes to Claude, who can then ask the user for confirmation.</li>
+        </ul>
+
+        <p>Make it executable:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>chmod +x skill/resource-cleanup/hooks/block-destructive.sh</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Build the resource-cleanup skill</span>
+      <div class="step-content">
+        <p>This is the main operations skill. It uses all four patterns: on-demand hooks, dry-run default, soak period, and audit logging.</p>
+
+        <p>Create <code>skill/resource-cleanup/SKILL.md</code>:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">skill/resource-cleanup/SKILL.md</div>
+          <pre>---
+name: resource-cleanup
+description: |
+  Find and clean up orphaned resources: stale git branches, unused config files,
+  orphaned assets, and other project cruft. Use when the user says "clean up",
+  "find stale branches", "remove unused files", "orphaned resources", or
+  "project hygiene". Defaults to dry-run (report only). Pass --execute to
+  actually perform cleanup.
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "./hooks/block-destructive.sh"
+---</pre>
+        </div>
+
+        <p>The frontmatter wires up the <code>block-destructive.sh</code> hook. It activates automatically when this skill loads and deactivates when it completes.</p>
+
+        <p>Below the frontmatter, write the skill instructions:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">skill/resource-cleanup/SKILL.md (body)</div>
+          <pre># Resource Cleanup
+
+Find orphaned resources, report them, and clean up after user confirmation.
+**Default mode is dry-run** -- no resources are modified unless `--execute` is passed.
+
+## Arguments
+
+- (no args): Dry-run mode. Scan and report only.
+- `--execute`: Execute mode. Scan, report, confirm, then clean up.</pre>
+        </div>
+
+        <p>The full SKILL.md content continues with scanning instructions. Here&rsquo;s what matters about its structure:</p>
+
+        <p><strong>Dry-run mode</strong> (the default) scans and reports. It never deletes anything. The report includes resource type, name, age, and why it&rsquo;s considered orphaned.</p>
+
+        <p><strong>Execute mode</strong> (<code>--execute</code>) follows the full soak-period flow:</p>
+
+        <ol>
+          <li>Scan and build the same report as dry-run</li>
+          <li>Present the report and wait for user review</li>
+          <li>Ask the user to confirm or exclude items</li>
+          <li>Execute deletions one at a time, appending <code># CONFIRMED_DESTRUCTIVE</code> to each command so the hook allows it</li>
+          <li>Write an audit log entry</li>
+        </ol>
+
+        <p>The audit log goes to <code>.claude/audit.log</code> with timestamps, resource names, and the action taken.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Build the careful skill</span>
+      <div class="step-content">
+        <p>This is the &ldquo;pure hook-as-skill&rdquo; pattern. The skill exists solely to activate destructive-command blocking.</p>
+
+        <p>Create <code>skill/careful/SKILL.md</code>:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">skill/careful/SKILL.md</div>
+          <pre>---
+name: careful
+description: |
+  Activate careful mode -- block dangerous Bash commands for this session.
+  Use when the user says "be careful", "careful mode", "safety mode",
+  or "block dangerous commands".
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "../resource-cleanup/hooks/block-destructive.sh"
+---</pre>
+        </div>
+
+        <p>The <code>careful</code> skill reuses the same <code>block-destructive.sh</code> hook from <code>resource-cleanup</code>. It doesn&rsquo;t need its own copy &mdash; it references the shared hook.</p>
+
+        <p>The skill body is minimal:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">skill/careful/SKILL.md (body)</div>
+          <pre># Careful Mode Activated
+
+Dangerous Bash commands are now blocked for this session. The following
+patterns will be intercepted and stopped:
+...</pre>
+        </div>
+
+        <p>This demonstrates an important design principle: <strong>a skill can be pure infrastructure</strong>. It doesn&rsquo;t need to perform a task. It can exist solely to modify Claude&rsquo;s environment for the duration of a session.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Test the hook in isolation</span>
+      <div class="step-content">
+        <p>Before testing with Claude, verify the hook script works correctly by piping sample JSON:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span># Should pass (exit 0) -- safe command
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"git branch -a"}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"
+
+<span class="prompt">$ </span># Should block (exit 2) -- rm -rf
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"rm -rf old-directory/"}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"
+
+<span class="prompt">$ </span># Should block (exit 2) -- force push
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"git push --force origin main"}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"
+
+<span class="prompt">$ </span># Should block (exit 2) -- DROP TABLE
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"psql -c \"DROP TABLE users\""}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"
+
+<span class="prompt">$ </span># Should pass (exit 0) -- confirmed destructive command
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"rm -rf old-directory/ # CONFIRMED_DESTRUCTIVE"}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"
+
+<span class="prompt">$ </span># Should block (exit 2) -- git reset --hard
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"git reset --hard HEAD~3"}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"
+
+<span class="prompt">$ </span># Should block (exit 2) -- git clean -f
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"git clean -fd"}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"</div>
+
+        <p>Verify: safe commands exit 0, destructive commands exit 2 with a &ldquo;BLOCKED:&rdquo; message, and confirmed destructive commands exit 0.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Install and test with Claude</span>
+      <div class="step-content">
+        <p>Install the skills where Claude can find them:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span># Option A: Project-local (recommended for testing)
+<span class="prompt">$ </span>cp -r skill/resource-cleanup/ .claude/skills/resource-cleanup/
+<span class="prompt">$ </span>cp -r skill/careful/ .claude/skills/careful/
+
+<span class="prompt">$ </span># Option B: Global
+<span class="prompt">$ </span>cp -r skill/resource-cleanup/ ~/.claude/skills/resource-cleanup/
+<span class="prompt">$ </span>cp -r skill/careful/ ~/.claude/skills/careful/</div>
+
+        <p>Test the <code>careful</code> skill:</p>
+
+        <div class="prompt-box-dark">You: /careful
+Claude: Careful mode activated. Dangerous commands are now blocked.
+
+You: Delete the entire src directory
+Claude: [attempts rm -rf src/]
+Hook: BLOCKED: 'rm -rf' detected...
+Claude: I can&rsquo;t delete the directory because careful mode is blocking
+        destructive commands. Would you like me to proceed anyway?</div>
+
+        <p>Test the <code>resource-cleanup</code> skill:</p>
+
+        <div class="prompt-box-dark">You: /resource-cleanup
+Claude: [scans for stale branches, unused configs, orphaned assets]
+Claude: Found 3 orphaned resources:
+        1. Branch: feature/old-experiment (47 days stale)
+        2. Config: .eslintrc.legacy (not referenced)
+        3. Asset: public/old-logo.png (not imported)
+        No changes made (dry-run mode).
+
+You: /resource-cleanup --execute
+Claude: [shows same report, then asks for confirmation]
+Claude: Proceed with cleanup of these 3 resources? (y/n)
+You: y
+Claude: [deletes each resource with CONFIRMED_DESTRUCTIVE marker]
+Claude: Cleanup complete. Audit log written to .claude/audit.log</div>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li>
+        <p><strong>Test the hook against edge cases</strong></p>
+        <p>Run these additional test cases against <code>block-destructive.sh</code>:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span># Edge case: rm with -r and -f as separate flags
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"rm -r -f old-dir/"}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"
+
+<span class="prompt">$ </span># Edge case: command buried in a pipeline
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"find . -name old | xargs rm -rf"}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"
+
+<span class="prompt">$ </span># Edge case: DELETE FROM in a heredoc
+<span class="prompt">$ </span>echo '{"tool_input":{"command":"psql &lt;&lt;EOF\nDELETE FROM users WHERE active=false;\nEOF"}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"</div>
+
+        <p>Which of these does the hook catch? Which does it miss? What changes would you make to improve coverage?</p>
+      </li>
+      <li>
+        <p><strong>Add a new blocked pattern</strong></p>
+        <p>Add a check for <code>truncate</code> (SQL table truncation) to <code>block-destructive.sh</code>. Follow the same pattern as the existing checks:</p>
+        <ol>
+          <li>Add a regex match for <code>TRUNCATE TABLE</code> (case-insensitive)</li>
+          <li>Print a descriptive &ldquo;BLOCKED:&rdquo; message to stderr</li>
+          <li>Exit with code 2</li>
+        </ol>
+
+        <p>Test your addition:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>echo '{"tool_input":{"command":"psql -c \"TRUNCATE TABLE sessions\""}}' | ./skill/resource-cleanup/hooks/block-destructive.sh
+<span class="prompt">$ </span>echo "Exit: $?"</div>
+      </li>
+      <li>
+        <p><strong>Build a /freeze skill</strong></p>
+        <p>Create a new skill called <code>freeze</code> that blocks file edits outside a specified directory. The skill should:</p>
+        <ol>
+          <li>Accept a directory path as an argument (e.g., <code>/freeze src/feature-x/</code>)</li>
+          <li>Register a <code>PreToolUse</code> hook on <code>Edit|Write</code> that checks the <code>file_path</code></li>
+          <li>Block any edit to a file outside the specified directory</li>
+        </ol>
+        <p>Hint: the hook needs access to the directory argument. One approach is to write the directory to a temp file that the hook reads.</p>
+      </li>
+      <li>
+        <p><strong>Add age thresholds to resource-cleanup</strong></p>
+        <p>Modify the <code>resource-cleanup</code> skill to accept a <code>--days</code> argument that controls the staleness threshold:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>/resource-cleanup --days 90     # Only flag branches older than 90 days
+<span class="prompt">$ </span>/resource-cleanup --days 7      # Flag anything older than a week</div>
+
+        <p>Update the scanning logic to use this threshold instead of the hardcoded 30-day default.</p>
+      </li>
+      <li>
+        <p><strong>Implement persistent audit logging</strong></p>
+        <p>Extend the audit logging to use the memory pattern from Course 12. Instead of writing to a flat file, write structured audit entries to <code>.claude/memory/audit/</code>:</p>
+
+        <div class="file-tree">.claude/memory/audit/
+&#9500;&#9472;&#9472; 2026-03-18-cleanup.md
+&#9500;&#9472;&#9472; 2026-03-15-cleanup.md
+&#9492;&#9472;&#9472; summary.md</div>
+
+        <p>Each entry should be a Markdown file with frontmatter containing structured data (timestamp, resources affected, outcome). The <code>summary.md</code> file should be updated after each operation with running totals.</p>
+      </li>
+    </ol>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>skill/resource-cleanup/hooks/block-destructive.sh</code> exists and is executable</li>
+      <li><code>block-destructive.sh</code> blocks <code>rm -rf</code> commands (exit 2 with stderr message)</li>
+      <li><code>block-destructive.sh</code> blocks <code>git push --force</code> commands (exit 2)</li>
+      <li><code>block-destructive.sh</code> blocks <code>DROP TABLE</code> commands (exit 2)</li>
+      <li><code>block-destructive.sh</code> blocks <code>DELETE FROM</code> commands (exit 2)</li>
+      <li><code>block-destructive.sh</code> blocks <code>git reset --hard</code> commands (exit 2)</li>
+      <li><code>block-destructive.sh</code> blocks <code>git clean -f</code> commands (exit 2)</li>
+      <li><code>block-destructive.sh</code> allows confirmed commands with <code>CONFIRMED_DESTRUCTIVE</code> marker (exit 0)</li>
+      <li><code>block-destructive.sh</code> allows safe commands like <code>git branch -a</code> (exit 0)</li>
+      <li><code>skill/resource-cleanup/SKILL.md</code> has valid YAML frontmatter with <code>hooks</code> field</li>
+      <li><code>skill/resource-cleanup/SKILL.md</code> defaults to dry-run mode</li>
+      <li><code>skill/resource-cleanup/SKILL.md</code> requires <code>--execute</code> flag for actual cleanup</li>
+      <li><code>skill/resource-cleanup/SKILL.md</code> includes audit logging instructions</li>
+      <li><code>skill/careful/SKILL.md</code> has valid YAML frontmatter with <code>hooks</code> field</li>
+      <li><code>skill/careful/SKILL.md</code> references the shared <code>block-destructive.sh</code> hook</li>
+      <li>You can explain the difference between dry-run mode and soak periods</li>
+      <li>You can explain why operations skills need on-demand hooks rather than global hooks</li>
+      <li>You understand the confirmation marker pattern (<code>CONFIRMED_DESTRUCTIVE</code>)</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> You&rsquo;ve now built operations skills with layered safety: on-demand hooks that activate per-session, dry-run defaults that prevent accidental execution, soak periods that create space for review, and audit logs that record what happened.</p>
+      <p>These patterns apply to any skill that performs destructive or irreversible actions &mdash; database migrations, infrastructure provisioning, dependency upgrades, and more. The key principle is always the same: <strong>safe by default, dangerous only by explicit request</strong>.</p>
+      <p>With Courses 12&ndash;15 complete, you&rsquo;ve covered the full range of Phase 4 production patterns: memory and context management, runbook automation, and infrastructure operations. You&rsquo;re ready to tackle the <strong>Course 11 Capstone</strong>, where you&rsquo;ll combine skills, hooks, subagents, and teams into a complete production system. The capstone is the culmination of everything you&rsquo;ve learned across all phases.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-14-runbook-skills.html" class="prev">Runbook Skills</a>
+      <a href="index.html" class="next">Curriculum Overview</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+        <li class="nav-phase-label">Phase 4: Production Patterns</li>
+        <li><a href="course-12-production-skill-craft.html">12. Production Skill Craft</a></li>
+        <li><a href="course-13-data-fetching-analysis.html">13. Data Fetching &amp; Analysis</a></li>
+        <li><a href="course-14-runbook-skills.html">14. Runbook Skills</a></li>
+        <li><a href="course-15-infrastructure-operations.html" class="current">15. Infrastructure Operations</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+
+  <script src="copy-code.js"></script>
+
+</body>
+</html>

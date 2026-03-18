@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Fetching &amp; Analysis — Skills: Basics and Beyond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <p class="site-label">Claude Code Skills</p>
+      <h1><a href="index.html">Skills: Basics and Beyond</a></h1>
+      <nav>
+        <a href="index.html">Curriculum</a>
+        <span class="phase-label">Phase 4: Production Patterns</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SLOGAN BANNER -->
+    <div class="slogan-banner">
+      <span class="main-slogan">Build once, benefit every time.</span>
+      <span class="subtext">A hands-on curriculum for building skills, hooks, agents, and workflows in Claude Code.</span>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <h1 class="page-title">Data Fetching &amp; Analysis Skills</h1>
+
+    <!-- COURSE METADATA -->
+    <div class="course-meta">
+      <span class="meta-pill">Course <strong>13</strong> of 15</span>
+      <span class="meta-pill"><strong>Intermediate-Advanced</strong></span>
+      <span class="meta-pill">50 min</span>
+    </div>
+
+    <!-- LEAD PARAGRAPH -->
+    <p class="lead">Most data analysis tasks follow a predictable cycle &mdash; connect, query, transform, present &mdash; yet without a skill Claude rewrites every step from scratch each time. This course teaches you the <strong>data skill pattern</strong>: provide a library of tested helper scripts that Claude composes at runtime, backed by a schema reference and a configuration file that maps datasources, dashboards, and cache settings.</p>
+
+    <!-- PREREQUISITES -->
+    <div class="callout info">
+      <p><strong>Prerequisites:</strong></p>
+      <ul>
+        <li>Completed <strong>Courses 1&ndash;5</strong> (skills fundamentals, descriptions, anatomy, testing, advanced features)</li>
+        <li>Completed <strong>Course 12</strong> (dynamic context injection, config patterns)</li>
+        <li>Claude Code installed and working (<code>claude</code> command available)</li>
+        <li>Python 3.8+ installed (for the helper scripts)</li>
+        <li>Familiarity with JSON output and CLI argument patterns</li>
+      </ul>
+    </div>
+
+    <!-- CONCEPTS -->
+    <h2>Concepts</h2>
+
+    <h3>1. The Data Skill Pattern</h3>
+
+    <p>Most data analysis tasks follow a predictable cycle: connect to a source, query for data, transform results, present findings. Without a skill, Claude writes every step from scratch each time &mdash; connection boilerplate, query construction, output formatting. The code works, but it&rsquo;s inconsistent, hard to audit, and re-invented on every invocation.</p>
+
+    <p>The <strong>data skill pattern</strong> flips this: you provide a library of tested helper scripts that Claude composes at runtime. Instead of writing a Prometheus query from memory, Claude calls your <code>query_metrics.py</code> script with the right arguments. Instead of guessing your database schema, Claude reads <code>schema.md</code> to understand table relationships.</p>
+
+    <p><strong>Before (Claude writes everything from scratch):</strong></p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre># Claude generates this every time -- different each invocation
+import psycopg2
+import os
+import json
+
+conn = psycopg2.connect(
+    host=os.environ.get("DB_HOST", "localhost"),
+    port=os.environ.get("DB_PORT", 5432),
+    dbname=os.environ.get("DB_NAME", "myapp"),
+    user=os.environ.get("DB_USER", "readonly"),
+    password=os.environ.get("DB_PASSWORD", "")
+)
+cursor = conn.cursor()
+cursor.execute("""
+    SELECT user_id, event_type, created_at
+    FROM events
+    WHERE created_at &gt; NOW() - INTERVAL '24 hours'
+    ORDER BY created_at DESC
+""")
+results = cursor.fetchall()
+print(json.dumps([dict(zip([d[0] for d in cursor.description], row)) for row in results]))
+conn.close()</pre>
+    </div>
+
+    <p><strong>After (Claude composes from provided helpers):</strong></p>
+
+    <div class="terminal-block"><span class="prompt">$ </span>python3 scripts/fetch_events.py --source app_db --since 24h --type all --format json</div>
+
+    <p>The advantages are significant:</p>
+
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th>From-scratch</th>
+          <th>Composed from helpers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Connection handling</td>
+          <td>Re-written each time, may vary</td>
+          <td>Consistent, tested, handles errors</td>
+        </tr>
+        <tr>
+          <td>Schema knowledge</td>
+          <td>Claude guesses or asks</td>
+          <td>Reads from <code>schema.md</code></td>
+        </tr>
+        <tr>
+          <td>Output format</td>
+          <td>Inconsistent</td>
+          <td>Standardized JSON contract</td>
+        </tr>
+        <tr>
+          <td>Error handling</td>
+          <td>Often minimal</td>
+          <td>Built into each script</td>
+        </tr>
+        <tr>
+          <td>Auditability</td>
+          <td>Hard to review generated code</td>
+          <td>Review the helper scripts once</td>
+        </tr>
+        <tr>
+          <td>Reproducibility</td>
+          <td>Different code each run</td>
+          <td>Same scripts, different arguments</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2. Credential &amp; Connection Management</h3>
+
+    <p>Data skills need to connect to databases, APIs, and monitoring systems. Hardcoding credentials is a non-starter. The pattern is:</p>
+
+    <ol>
+      <li><strong>Store connection metadata in <code>config.json</code></strong> &mdash; datasource names, types, which environment variables hold the credentials</li>
+      <li><strong>Reference secrets via environment variables</strong> &mdash; never put actual passwords or tokens in config</li>
+      <li><strong>Use <code>.env</code> files for local development</strong> &mdash; loaded by the helper scripts, never committed to version control</li>
+    </ol>
+
+    <p>Here is the layered approach:</p>
+
+    <pre>config.json          &rarr;  "connection_env": "APP_DB_URL"     (name of the env var)
+.env (local only)    &rarr;  APP_DB_URL=postgres://user:pass@localhost:5432/myapp
+Environment (CI/CD)  &rarr;  APP_DB_URL is set by the deployment system</pre>
+
+    <p>Your <code>config.json</code> acts as a registry of datasources:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>{
+  "datasources": [
+    {
+      "name": "app_db",
+      "type": "postgres",
+      "connection_env": "APP_DB_URL",
+      "description": "Primary application database (read replica)"
+    }
+  ]
+}</pre>
+    </div>
+
+    <p>Claude reads this config to know which datasources exist and which environment variable to check. The helper scripts read the actual environment variable at runtime. This separation means:</p>
+
+    <ul>
+      <li><code>config.json</code> is safe to commit (no secrets)</li>
+      <li><code>.env</code> is gitignored (has actual secrets)</li>
+      <li>Scripts work in any environment where the env vars are set</li>
+    </ul>
+
+    <h3>3. Dynamic Script Generation</h3>
+
+    <p>The real power of the data skill pattern emerges when Claude composes multiple helpers into a single analysis flow. Rather than running one script at a time, Claude generates a short analysis script that chains your helpers together.</p>
+
+    <p>For example, when asked &ldquo;Show me the error rate trend and the events that correlate with spikes&rdquo;:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>#!/usr/bin/env bash
+set -euo pipefail
+
+# Step 1: Get error rate metrics for the last 6 hours
+python3 scripts/query_metrics.py \
+  --metric http_error_rate \
+  --since 6h \
+  --step 5m \
+  --format json &gt; /tmp/error_rates.json
+
+# Step 2: Find timestamps where error rate exceeded threshold
+SPIKE_TIMES=$(python3 -c "
+import json, sys
+data = json.load(open('/tmp/error_rates.json'))
+spikes = [p['timestamp'] for p in data['datapoints'] if p['value'] &gt; 0.05]
+print(','.join(spikes[:10]))
+")
+
+# Step 3: Fetch events around those spike times
+for ts in $(echo "$SPIKE_TIMES" | tr ',' '\n'); do
+  echo "=== Events near $ts ==="
+  python3 scripts/fetch_events.py \
+    --source app_db \
+    --around "$ts" \
+    --window 5m \
+    --type error,deploy,config_change \
+    --format json
+done</pre>
+    </div>
+
+    <p>Claude is not writing database queries from scratch &mdash; it is composing your tested building blocks. This is the <strong>&ldquo;Store Scripts &amp; Generate Code&rdquo;</strong> pattern: the skill stores reliable components, and Claude generates the glue code to wire them together for each specific question.</p>
+
+    <h3>4. Dashboard &amp; Monitoring Integration</h3>
+
+    <p>Data analysis often starts from a dashboard alert or a Grafana panel. The data-explorer skill includes a dashboard lookup table &mdash; a mapping from problem areas to the dashboards, datasource UIDs, and cluster names that are relevant.</p>
+
+    <p>In <code>config.json</code>:</p>
+
+    <div class="copy-wrapper">
+      <button class="copy-btn">Copy</button>
+      <pre>{
+  "dashboards": {
+    "api_latency": {
+      "url": "https://grafana.internal/d/abc123/api-latency",
+      "datasource_uid": "prometheus-prod",
+      "description": "P50/P95/P99 latency by endpoint"
+    },
+    "error_budget": {
+      "url": "https://grafana.internal/d/def456/error-budget",
+      "datasource_uid": "prometheus-prod",
+      "description": "SLO burn rate and remaining error budget"
+    },
+    "user_activity": {
+      "url": "https://grafana.internal/d/ghi789/user-activity",
+      "datasource_uid": "app-postgres",
+      "description": "Signups, logins, active sessions over time"
+    }
+  }
+}</pre>
+    </div>
+
+    <p>When Claude investigates an issue, it consults this lookup table to:</p>
+
+    <ul>
+      <li>Point the user to the right dashboard for visual confirmation</li>
+      <li>Know which datasource UID to query programmatically</li>
+      <li>Understand what metrics are already being tracked for a given problem area</li>
+    </ul>
+
+    <p>This eliminates the &ldquo;which dashboard do I check?&rdquo; back-and-forth and keeps investigation workflows fast.</p>
+
+    <h3>5. Result Caching &amp; History</h3>
+
+    <p>Data analysis is often iterative. You check a metric, make a change, then check again. Without caching, each query is isolated &mdash; Claude cannot tell you what changed.</p>
+
+    <p>The result caching pattern stores query results in a local cache directory with timestamps:</p>
+
+    <div class="file-tree">.cache/data-explorer/
+&#9500;&#9472;&#9472; 2025-01-15T10:30:00_http_error_rate_6h.json
+&#9500;&#9472;&#9472; 2025-01-15T11:45:00_http_error_rate_6h.json
+&#9492;&#9472;&#9472; 2025-01-15T11:45:00_user_events_24h.json</div>
+
+    <p>Each cached file contains the query parameters and results. When Claude runs the same query later, it can:</p>
+
+    <ol>
+      <li><strong>Compare current vs previous</strong>: &ldquo;Error rate was 2.3% an hour ago, now it&rsquo;s 0.8% &mdash; the fix is working&rdquo;</li>
+      <li><strong>Detect trends</strong>: &ldquo;Over the last 3 runs, signup events have been declining&rdquo;</li>
+      <li><strong>Avoid redundant queries</strong>: &ldquo;I already fetched this data 5 minutes ago, reusing cached results&rdquo;</li>
+    </ol>
+
+    <p>The diff-based reporting pattern is especially powerful for incident response:</p>
+
+    <pre>## Changes Since Last Check (15 min ago)
+- http_error_rate: 4.7% &rarr; 1.2% (&darr; 74%)
+- active_sessions: 12,340 &rarr; 14,200 (&uarr; 15%)
+- deploy events: 1 new (deploy #4521 at 10:42)</pre>
+
+    <!-- KEY REFERENCES -->
+    <div class="callout insight">
+      <p><strong>Key References:</strong></p>
+      <table class="tool-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>SKILL.md</code></td>
+            <td>Main skill instructions &mdash; tells Claude how to use the helpers</td>
+          </tr>
+          <tr>
+            <td><code>config.json</code></td>
+            <td>Datasource registry, dashboard lookup, cache settings</td>
+          </tr>
+          <tr>
+            <td><code>scripts/fetch_events.py</code></td>
+            <td>Helper to query events from a database or API</td>
+          </tr>
+          <tr>
+            <td><code>scripts/query_metrics.py</code></td>
+            <td>Helper to query time-series metrics</td>
+          </tr>
+          <tr>
+            <td><code>references/schema.md</code></td>
+            <td>Data model reference &mdash; tables, events, metrics, relationships</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WHAT YOU'RE BUILDING -->
+    <h2>What You&rsquo;re Building</h2>
+
+    <p>The <code>data-explorer</code> skill &mdash; a self-contained data analysis toolkit that Claude composes at runtime. It includes:</p>
+
+    <ul>
+      <li><strong>Helper scripts</strong> (<code>scripts/</code>) that handle the mechanics of connecting to datasources and querying data</li>
+      <li><strong>A schema reference</strong> (<code>references/schema.md</code>) so Claude understands your data model without guessing</li>
+      <li><strong>A configuration file</strong> (<code>config.json</code>) mapping datasources, dashboards, and cache settings</li>
+      <li><strong>A SKILL.md</strong> that teaches Claude how to compose these pieces into analysis workflows</li>
+    </ul>
+
+    <p>When you ask Claude &ldquo;What&rsquo;s driving the spike in error rates?&rdquo;, it will:</p>
+
+    <ol>
+      <li>Read <code>config.json</code> to find the right datasource</li>
+      <li>Read <code>references/schema.md</code> to understand what tables and metrics are relevant</li>
+      <li>Call <code>scripts/query_metrics.py</code> to pull error rate data</li>
+      <li>Call <code>scripts/fetch_events.py</code> to find correlated events (deploys, config changes)</li>
+      <li>Compare with cached results if available</li>
+      <li>Present a structured analysis with dashboard links for visual confirmation</li>
+    </ol>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- WALKTHROUGH -->
+    <h2>Walkthrough</h2>
+
+    <div class="step-card">
+      <span class="step-number">1</span>
+      <span class="step-title">Create the Skill Directory Structure</span>
+      <div class="step-content">
+        <p>Create the following directory tree. You can place this in your project&rsquo;s <code>.claude/skills/</code> directory or in <code>~/.claude/skills/</code> for global availability:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>mkdir -p data-explorer/scripts
+<span class="prompt">$ </span>mkdir -p data-explorer/references</div>
+
+        <p>Your target structure:</p>
+
+        <div class="file-tree">data-explorer/
+&#9500;&#9472;&#9472; SKILL.md
+&#9500;&#9472;&#9472; config.json
+&#9500;&#9472;&#9472; scripts/
+&#9474;   &#9500;&#9472;&#9472; fetch_events.py
+&#9474;   &#9492;&#9472;&#9472; query_metrics.py
+&#9492;&#9472;&#9472; references/
+    &#9492;&#9472;&#9472; schema.md</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">2</span>
+      <span class="step-title">Create the Configuration File</span>
+      <div class="step-content">
+        <p>Create <code>data-explorer/config.json</code>:</p>
+
+        <div class="copy-wrapper">
+          <button class="copy-btn">Copy</button>
+          <pre>{
+  "datasources": [
+    {
+      "name": "app_db",
+      "type": "postgres",
+      "connection_env": "APP_DB_URL",
+      "description": "Primary application database (read replica)",
+      "default_schema": "public"
+    },
+    {
+      "name": "metrics",
+      "type": "prometheus",
+      "connection_env": "PROMETHEUS_URL",
+      "description": "Prometheus metrics server"
+    },
+    {
+      "name": "logs",
+      "type": "elasticsearch",
+      "connection_env": "ELASTICSEARCH_URL",
+      "description": "Centralized log storage"
+    }
+  ],
+  "dashboards": {
+    "api_latency": {
+      "url": "https://grafana.internal/d/abc123/api-latency",
+      "datasource_uid": "prometheus-prod",
+      "description": "P50/P95/P99 latency by endpoint"
+    },
+    "error_budget": {
+      "url": "https://grafana.internal/d/def456/error-budget",
+      "datasource_uid": "prometheus-prod",
+      "description": "SLO burn rate and remaining error budget"
+    },
+    "user_activity": {
+      "url": "https://grafana.internal/d/ghi789/user-activity",
+      "datasource_uid": "app-postgres",
+      "description": "Signups, logins, active sessions over time"
+    },
+    "infrastructure": {
+      "url": "https://grafana.internal/d/jkl012/infrastructure",
+      "datasource_uid": "prometheus-prod",
+      "description": "CPU, memory, disk, network by service"
+    }
+  },
+  "cache_dir": ".cache/data-explorer",
+  "default_time_range": "1h",
+  "max_cache_age_minutes": 60
+}</pre>
+        </div>
+
+        <p>Key design decisions:</p>
+
+        <ul>
+          <li><strong><code>connection_env</code></strong> references environment variable names, not actual connection strings</li>
+          <li><strong><code>dashboards</code></strong> map problem areas to URLs, making it easy for Claude to link to visual tools</li>
+          <li><strong><code>cache_dir</code></strong> is relative to the project root, keeping caches per-project</li>
+          <li><strong><code>max_cache_age_minutes</code></strong> tells Claude when cached data is too stale to reuse</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">3</span>
+      <span class="step-title">Create the Schema Reference</span>
+      <div class="step-content">
+        <p>Create <code>data-explorer/references/schema.md</code>. This is the document Claude reads to understand your data model. The full file is provided at <code>skill/data-explorer/references/schema.md</code>, but here&rsquo;s what it covers for a typical SaaS application:</p>
+
+        <ul>
+          <li><strong>Database tables</strong>: <code>users</code>, <code>events</code>, <code>organizations</code>, <code>deployments</code> &mdash; each with column types and descriptions</li>
+          <li><strong>Event types</strong>: 11 types across user, API, billing, deploy, and config categories &mdash; each with its JSON property payload</li>
+          <li><strong>Prometheus metrics</strong>: 7 metrics covering HTTP requests, latency, error rates, sessions, and background jobs</li>
+          <li><strong>Relationships</strong>: how tables connect (users &rarr; orgs, events &rarr; users) and how events correlate with metrics</li>
+        </ul>
+
+        <p>The schema reference is Claude&rsquo;s &ldquo;cheat sheet&rdquo; for your data model. Without it, Claude would have to guess table names, column names, and event types &mdash; or ask you every time.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">4</span>
+      <span class="step-title">Create the fetch_events.py Helper</span>
+      <div class="step-content">
+        <p>Create <code>data-explorer/scripts/fetch_events.py</code>. The full script is provided in the <code>skill/data-explorer/scripts/</code> directory, but here are the key design decisions to understand:</p>
+
+        <p>The script follows these design principles:</p>
+
+        <ul>
+          <li><strong>Clear input/output contract</strong>: CLI args in, JSON to stdout, errors to stderr</li>
+          <li><strong>Config-driven connections</strong>: reads <code>config.json</code> for datasource metadata, env vars for actual secrets</li>
+          <li><strong>Built-in caching</strong>: writes results to the cache directory automatically</li>
+          <li><strong>Safety</strong>: opens the database in read-only mode</li>
+          <li><strong>Good error messages</strong>: tells the user exactly what&rsquo;s wrong and how to fix it</li>
+        </ul>
+
+        <p>The key CLI flags are:</p>
+
+        <pre>--source   Datasource name from config.json (e.g., app_db)
+--since    Lookback duration (e.g., 24h, 30m, 7d)
+--around   Center timestamp for point-in-time queries (ISO 8601)
+--window   Window around --around (default: 5m)
+--type     Comma-separated event types, or 'all'
+--user-id  Filter by user
+--limit    Max results (default: 1000)
+--no-cache Skip caching</pre>
+
+        <p>Example invocations:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>python3 scripts/fetch_events.py --source app_db --since 24h --type user.login,api.error
+<span class="prompt">$ </span>python3 scripts/fetch_events.py --source app_db --around 2025-01-15T10:30:00Z --window 5m
+<span class="prompt">$ </span>python3 scripts/fetch_events.py --source app_db --since 1h --user-id abc-123 --limit 100</div>
+
+        <p>Read the full script at <code>skill/data-explorer/scripts/fetch_events.py</code> to see the implementation details: parameterized SQL query building, read-only connection mode, result caching, and JSON serialization.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">5</span>
+      <span class="step-title">Create the query_metrics.py Helper</span>
+      <div class="step-content">
+        <p>Create <code>data-explorer/scripts/query_metrics.py</code>. This script queries Prometheus and shares the same design principles as <code>fetch_events.py</code> (CLI args in, JSON stdout, errors stderr, config-driven, auto-caching).</p>
+
+        <p>The key CLI flags are:</p>
+
+        <pre>--metric   Metric name (e.g., http_error_rate, active_sessions)
+--since    Lookback duration (e.g., 1h, 6h, 7d)
+--step     Resolution (default: 1m)
+--agg      Aggregation: avg, max, min, sum, rate, p50, p90, p95, p99
+--labels   Filter labels (e.g., "endpoint=/api/users,method=GET")
+--no-cache Skip caching</pre>
+
+        <p>Example invocations:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>python3 scripts/query_metrics.py --metric http_error_rate --since 1h --step 1m
+<span class="prompt">$ </span>python3 scripts/query_metrics.py --metric http_requests_total --since 6h --step 5m --agg rate
+<span class="prompt">$ </span>python3 scripts/query_metrics.py --metric http_request_duration_seconds --since 1h --agg p95 --step 1m</div>
+
+        <p>Read the full script at <code>skill/data-explorer/scripts/query_metrics.py</code> for the PromQL query builder, Prometheus HTTP API integration, and histogram quantile support.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">6</span>
+      <span class="step-title">Create the SKILL.md</span>
+      <div class="step-content">
+        <p>Create <code>data-explorer/SKILL.md</code>. This is the file Claude reads when the skill is activated. The full file is provided in <code>skill/data-explorer/SKILL.md</code>, but here are the key sections to understand:</p>
+
+        <p><strong>Frontmatter</strong> &mdash; description includes trigger phrases like &ldquo;check metrics&rdquo;, &ldquo;look at events&rdquo;, &ldquo;analyze data&rdquo;, &ldquo;what&rsquo;s happening with [metric]&rdquo;, &ldquo;compare to last time&rdquo;:</p>
+
+        <div class="skill-file">
+          <div class="skill-file-header">data-explorer/SKILL.md</div>
+          <pre>---
+name: data-explorer
+description: &gt;
+  Explores application data by composing helper scripts for fetching events,
+  querying metrics, and analyzing trends. Use when the user asks to "check
+  metrics", "look at events", "analyze data", "what's happening with
+  [metric/feature]", "investigate [issue]", or "compare to last time".
+---</pre>
+        </div>
+
+        <p><strong>Available Scripts</strong> &mdash; documents each helper with its flags and usage, so Claude knows what tools it has.</p>
+
+        <p><strong>Workflow</strong> &mdash; a 7-step process: understand the question, read config, read schema, compose scripts, check cache, run analysis, link dashboards. This gives Claude the right approach without railroading specific steps.</p>
+
+        <p><strong>Result Caching &amp; Comparison</strong> &mdash; instructions for diff-based reporting when the user asks about changes or trends.</p>
+
+        <p><strong>Gotchas</strong> &mdash; 7 items covering credentials, read-only mode, rate limits, large result sets, time zones, missing dependencies, and cache staleness.</p>
+
+        <p>Read the full SKILL.md at <code>skill/data-explorer/SKILL.md</code>.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">7</span>
+      <span class="step-title">Verify the Structure</span>
+      <div class="step-content">
+        <p>Check that everything is in place:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>find data-explorer/ -type f | sort</div>
+
+        <p>Expected output:</p>
+
+        <pre>data-explorer/SKILL.md
+data-explorer/config.json
+data-explorer/references/schema.md
+data-explorer/scripts/fetch_events.py
+data-explorer/scripts/query_metrics.py</pre>
+
+        <p>Make the scripts executable:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>chmod +x data-explorer/scripts/fetch_events.py
+<span class="prompt">$ </span>chmod +x data-explorer/scripts/query_metrics.py</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">8</span>
+      <span class="step-title">Test the Skill Structure</span>
+      <div class="step-content">
+        <p>Before connecting real datasources, verify the skill loads correctly:</p>
+
+        <div class="terminal-block"><span class="prompt">$ </span>claude --skills-dir ./data-explorer</div>
+
+        <p>Then ask:</p>
+
+        <div class="prompt-box-dark">What data sources are available?</div>
+
+        <p>Claude should read <code>config.json</code> and list <code>app_db</code>, <code>metrics</code>, and <code>logs</code>.</p>
+
+        <div class="prompt-box-dark">What event types can I query?</div>
+
+        <p>Claude should read <code>references/schema.md</code> and list the event types.</p>
+
+        <div class="prompt-box-dark">Show me the error rate for the last hour</div>
+
+        <p>Claude should compose a call to <code>query_metrics.py</code> with the right arguments.</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-number">9</span>
+      <span class="step-title">Connect a Real Datasource (Optional)</span>
+      <div class="step-content">
+        <p>To test with real data, set the environment variables:</p>
+
+        <div class="terminal-block"><span class="comment"># For PostgreSQL</span>
+<span class="prompt">$ </span>export APP_DB_URL="postgres://readonly:password@localhost:5432/myapp"
+
+<span class="comment"># For Prometheus</span>
+<span class="prompt">$ </span>export PROMETHEUS_URL="http://localhost:9090"
+
+<span class="comment"># Then run the scripts directly to verify</span>
+<span class="prompt">$ </span>python3 data-explorer/scripts/fetch_events.py --source app_db --since 1h --type all
+<span class="prompt">$ </span>python3 data-explorer/scripts/query_metrics.py --metric http_requests_total --since 1h --step 5m --agg rate</div>
+
+        <p>If you do not have a local database or Prometheus instance, the scripts will exit with a clear error message pointing to the missing environment variable. This is by design &mdash; the skill works in any environment where the right env vars are set.</p>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- EXERCISES -->
+    <h2>Exercises</h2>
+
+    <ol>
+      <li>
+        <p><strong>Add a new datasource</strong></p>
+        <p>Extend <code>config.json</code> with a fourth datasource (for example, a Redis cache or a ClickHouse analytics database). Update <code>references/schema.md</code> with tables or key patterns for the new source. Create a new helper script <code>scripts/query_analytics.py</code> that connects to the new source. Test that Claude discovers and uses the new script through the skill.</p>
+      </li>
+      <li>
+        <p><strong>Build a comparison report</strong></p>
+        <p>Run a metrics query twice with a gap in between. Manually verify that two cache files are created. Then ask Claude &ldquo;Compare the current error rate to the last check.&rdquo; Verify that Claude reads both cache files and produces a diff-based report showing changes with direction arrows and percentages.</p>
+      </li>
+      <li>
+        <p><strong>Extend the schema reference</strong></p>
+        <p>Add a new entity (for example, <code>feature_flags</code> with columns for flag name, enabled state, rollout percentage, and targeting rules). Add corresponding event types (<code>feature_flag.toggled</code>, <code>feature_flag.evaluated</code>). Ask Claude a question about feature flag usage and verify it references the new schema entries.</p>
+      </li>
+      <li>
+        <p><strong>Create a dashboard lookup workflow</strong></p>
+        <p>Ask Claude &ldquo;Which dashboard should I check for API latency issues?&rdquo; Verify it reads the dashboards section of <code>config.json</code> and returns the correct URL and description. Then ask &ldquo;What metrics feed that dashboard?&rdquo; and verify it cross-references the datasource UID with the schema.</p>
+      </li>
+    </ol>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- VERIFICATION CHECKLIST -->
+    <h2>Verification Checklist</h2>
+
+    <ul class="checklist">
+      <li><code>data-explorer/SKILL.md</code> exists with valid YAML frontmatter and a description mentioning data, metrics, events, and analysis</li>
+      <li><code>data-explorer/config.json</code> is valid JSON with datasources, dashboards, cache_dir, and default_time_range</li>
+      <li><code>data-explorer/scripts/fetch_events.py</code> exists, is executable, and has a <code>#!/usr/bin/env python3</code> shebang</li>
+      <li><code>data-explorer/scripts/query_metrics.py</code> exists, is executable, and has a <code>#!/usr/bin/env python3</code> shebang</li>
+      <li><code>data-explorer/references/schema.md</code> documents tables, event types, metrics, and relationships</li>
+      <li>Running <code>fetch_events.py --help</code> prints usage information with examples</li>
+      <li>Running <code>query_metrics.py --help</code> prints usage information with examples</li>
+      <li>Both scripts exit with a clear error if the required environment variable is not set</li>
+      <li>Both scripts output JSON to stdout and errors to stderr</li>
+      <li>The SKILL.md references all helper scripts with usage examples</li>
+      <li>The SKILL.md includes a gotchas section covering credentials, read-only mode, rate limits, and cache staleness</li>
+      <li><code>config.json</code> uses environment variable references, not hardcoded secrets</li>
+      <li>Cache files are written to the configured cache_dir after each query</li>
+      <li>Claude can read config.json, schema.md, and compose script calls to answer data questions</li>
+    </ul>
+
+    <!-- WHAT'S NEXT -->
+    <div class="callout success">
+      <p><strong>What&rsquo;s Next:</strong> In <strong>Course 14: Runbook Skills &mdash; Symptom-Driven Investigation</strong>, you&rsquo;ll learn how runbooks differ from simple scripts (they involve judgment and branching), symptom routing with decision trees that map symptoms to investigation paths, multi-tool investigation composing MCP tools, CLI tools, and log sources, structured report output with severity classification and evidence linking, forked investigation using <code>context: fork</code> to avoid polluting the main context, and you&rsquo;ll build a <code>service-debugger</code> skill that takes an error signature and produces a structured findings report.</p>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider"></div>
+
+    <!-- PAGE NAVIGATION (Prev/Next) -->
+    <nav class="page-nav">
+      <a href="course-12-production-skill-craft.html" class="prev">Production Skill Craft</a>
+      <a href="course-14-runbook-skills.html" class="next">Runbook Skills</a>
+    </nav>
+
+    <!-- BOTTOM SITE NAVIGATION (Phase-grouped) -->
+    <nav class="site-nav-bottom">
+      <h3>All Courses</h3>
+      <ul>
+        <li class="nav-phase-label">Phase 1: Skills Fundamentals</li>
+        <li><a href="course-01-first-skill.html">1. Your First Skill</a></li>
+        <li><a href="course-02-descriptions-and-triggers.html">2. Descriptions &amp; Triggers</a></li>
+        <li><a href="course-03-full-anatomy.html">3. Full Skill Anatomy</a></li>
+        <li><a href="course-04-testing-iteration.html">4. Testing &amp; Iteration</a></li>
+        <li><a href="course-05-advanced-features.html">5. Advanced Features</a></li>
+        <li><a href="course-06-multi-step-workflows.html">6. Multi-Step Workflows</a></li>
+        <li><a href="course-07-hooks.html">7. Hooks</a></li>
+        <li class="nav-phase-label">Bridge</li>
+        <li><a href="course-07h-terminal-workspace.html">7&frac12;. Terminal Workspace</a></li>
+        <li class="nav-phase-label">Phase 2: Integrated Advanced</li>
+        <li><a href="course-08-custom-subagents.html">8. Custom Subagents</a></li>
+        <li><a href="course-09-skills-cli-integration.html">9. CLI Integration</a></li>
+        <li><a href="course-10-agent-teams.html">10. Agent Teams</a></li>
+        <li><a href="course-11-capstone.html">11. Capstone</a></li>
+        <li class="nav-phase-label">Phase 3: Task Workflow Mastery</li>
+        <li><a href="phase3-01-talking-to-panes.html">1. Talking to Panes</a></li>
+        <li><a href="phase3-02-capture-pane.html">2. Capture Pane</a></li>
+        <li><a href="phase3-03-jumping-between-worlds.html">3. Jumping Between Worlds</a></li>
+        <li><a href="phase3-04-next-skill.html">4. /next Skill</a></li>
+        <li><a href="phase3-05-done-skill.html">5. /done Skill</a></li>
+        <li><a href="phase3-06-triage-skill.html">6. /triage Skill</a></li>
+        <li><a href="phase3-07-startup-script.html">7. Startup Script</a></li>
+        <li><a href="phase3-08-today-skill.html">8. /today Skill</a></li>
+        <li><a href="phase3-09-overdue-skill.html">9. /overdue Skill</a></li>
+        <li><a href="phase3-10-compound-reminder.html">10. Compound Reminder</a></li>
+        <li><a href="phase3-11-file-protection.html">11. File Protection</a></li>
+        <li><a href="phase3-12-cockpit-layout.html">12. Cockpit Layout</a></li>
+        <li><a href="phase3-13-side-gigs.html">13. Side-Gigs Domain</a></li>
+        <li><a href="phase3-14-session-summary.html">14. Session Summary</a></li>
+        <li><a href="phase3-15-daily-rhythm.html">15. Daily Rhythm</a></li>
+        <li class="nav-phase-label">Phase 4: Production Patterns</li>
+        <li><a href="course-12-production-skill-craft.html">12. Production Skill Craft</a></li>
+        <li><a href="course-13-data-fetching-analysis.html" class="current">13. Data Fetching &amp; Analysis</a></li>
+        <li><a href="course-14-runbook-skills.html">14. Runbook Skills</a></li>
+        <li><a href="course-15-infrastructure-operations.html">15. Infrastructure Operations</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer>
+    <p>Claude Code Skills &mdash; <a href="https://github.com/buildLittleWorlds/claude-code-skills-basics-and-beyond">GitHub Repository</a></p>
+  </footer>
+  <script src="copy-code.js"></script>
+
+</body>
+</html>
